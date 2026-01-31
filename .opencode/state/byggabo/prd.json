@@ -123,7 +123,7 @@
         "Navigation header with project list and contacts links",
         "Project list page shows card grid with summary info"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "security-1",

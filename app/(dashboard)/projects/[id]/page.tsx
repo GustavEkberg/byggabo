@@ -37,7 +37,7 @@ async function Content({ projectId }: { projectId: string }) {
       ]);
 
       return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="mx-auto max-w-6xl px-4 py-8">
           <ProjectHeader project={project} />
 
           <div className="mt-6">
@@ -69,7 +69,7 @@ async function Content({ projectId }: { projectId: string }) {
             Match.when('NotFoundError', () => NextEffect.redirect('/projects')),
             Match.orElse(() =>
               Effect.succeed(
-                <div className="container mx-auto px-4 py-8">
+                <div className="mx-auto max-w-6xl px-4 py-8">
                   <p className="text-red-500">Error: {error.message}</p>
                 </div>
               )
@@ -85,7 +85,7 @@ export default async function ProjectPage({ params }: Props) {
   const { id } = await params;
 
   return (
-    <Suspense fallback={<div className="container mx-auto px-4 py-8">Loading...</div>}>
+    <Suspense fallback={<div className="mx-auto max-w-6xl px-4 py-8">Loading...</div>}>
       <Content projectId={id} />
     </Suspense>
   );

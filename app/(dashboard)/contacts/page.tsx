@@ -17,7 +17,7 @@ async function Content() {
       const contacts = yield* getContacts();
 
       return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="mx-auto max-w-6xl px-4 py-8">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-2xl font-semibold">Contacts</h1>
@@ -29,7 +29,7 @@ async function Content() {
           </div>
 
           {contacts.length === 0 ? (
-            <div className="text-center py-12 border rounded-lg bg-card">
+            <div className="text-center py-12 rounded-xl border bg-card">
               <p className="text-muted-foreground">No contacts yet.</p>
               <p className="text-sm text-muted-foreground mt-1">
                 Add contractors and suppliers to use in quotations.
@@ -49,7 +49,7 @@ async function Content() {
             Match.when('UnauthenticatedError', () => NextEffect.redirect('/login')),
             Match.orElse(() =>
               Effect.succeed(
-                <div className="container mx-auto px-4 py-8">
+                <div className="mx-auto max-w-6xl px-4 py-8">
                   <p className="text-red-500">Error: {error.message}</p>
                 </div>
               )
@@ -63,7 +63,7 @@ async function Content() {
 
 export default async function ContactsPage() {
   return (
-    <Suspense fallback={<div className="container mx-auto px-4 py-8">Loading...</div>}>
+    <Suspense fallback={<div className="mx-auto max-w-6xl px-4 py-8">Loading...</div>}>
       <Content />
     </Suspense>
   );

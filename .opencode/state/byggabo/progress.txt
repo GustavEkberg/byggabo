@@ -159,3 +159,24 @@ Started: 2026-01-31
 - **Learnings:**
   - Intl.NumberFormat with 'sv-SE' locale for proper thousand separators
   - Decimal amounts from DB come as strings, need parseFloat
+
+## Task - ui-3
+
+- Updated layout to match reference repo style with consistent max-w-6xl
+- Created new Header component with sticky positioning and mobile dropdown menu
+- Enhanced ProjectList cards with financial summary (budget progress bar, counts)
+- Added `getProjectsWithSummary()` query with SQL subqueries for aggregates
+- Added oklch success/warning colors to globals.css for financial data
+- Files:
+  - `app/(dashboard)/header.tsx` (new client component)
+  - `app/(dashboard)/layout.tsx` (use Header component)
+  - `app/(dashboard)/projects/page.tsx` (use getProjectsWithSummary)
+  - `app/(dashboard)/projects/project-list.tsx` (enhanced cards with budget info)
+  - `app/(dashboard)/projects/[id]/page.tsx` (consistent max-w-6xl)
+  - `app/(dashboard)/contacts/page.tsx` (consistent max-w-6xl, rounded-xl)
+  - `lib/core/project/queries.ts` (added getProjectsWithSummary)
+  - `app/globals.css` (added --success, --warning CSS variables)
+- **Learnings:**
+  - SQL aggregates with Drizzle: use `sql<T>` typed template strings in select
+  - Sticky header: `sticky top-0 z-50 backdrop-blur bg-background/95`
+  - Mobile-first nav: hide desktop links on mobile with `hidden sm:flex`, show in dropdown
