@@ -47,3 +47,27 @@ Started: 2026-01-31
   - `components/ui/dialog.tsx`
   - `vitest.config.ts` (exclude reference_repo)
 - **Learnings:** PRD step mentions "POST /api/project/create" but correct pattern is server actions, not API routes
+
+## Task - functional-2
+
+- Implemented cost item CRUD with receipt uploads
+- Queries: `lib/core/cost-item/queries.ts` (getCostItems, getCostItem)
+- Server actions: `create-cost-item-action.ts`, `update-cost-item-action.ts`, `delete-cost-item-action.ts`
+- Log items: `lib/core/log-item/queries.ts` (getLogItems)
+- UI: Cost item list, create/edit dialogs, row with edit/delete, timeline component
+- Files:
+  - `lib/core/cost-item/queries.ts`
+  - `lib/core/cost-item/create-cost-item-action.ts`
+  - `lib/core/cost-item/update-cost-item-action.ts`
+  - `lib/core/cost-item/delete-cost-item-action.ts`
+  - `lib/core/log-item/queries.ts`
+  - `app/(dashboard)/projects/[id]/page.tsx` (updated to fetch cost items + log items)
+  - `app/(dashboard)/projects/[id]/cost-item-list.tsx`
+  - `app/(dashboard)/projects/[id]/cost-item-row.tsx`
+  - `app/(dashboard)/projects/[id]/create-cost-item-dialog.tsx`
+  - `app/(dashboard)/projects/[id]/edit-cost-item-dialog.tsx`
+  - `app/(dashboard)/projects/[id]/timeline.tsx`
+- **Learnings:** 
+  - LogItem records auto-created when cost items added/deleted
+  - S3 upload: getUploadUrlAction returns signedUrl + publicUrl, client does PUT to signedUrl
+  - NullOr schema for optional fields that can be cleared: `S.optional(S.NullOr(S.String))`

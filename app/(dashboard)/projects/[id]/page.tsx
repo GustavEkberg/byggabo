@@ -4,7 +4,11 @@ import { cookies } from 'next/headers';
 import { NextEffect } from '@/lib/next-effect';
 import { AppLayer } from '@/lib/layers';
 import { getProject } from '@/lib/core/project/queries';
+import { getCostItems } from '@/lib/core/cost-item/queries';
+import { getLogItems } from '@/lib/core/log-item/queries';
 import { ProjectHeader } from './project-header';
+import { CostItemList } from './cost-item-list';
+import { Timeline } from './timeline';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,16 +21,19 @@ async function Content({ projectId }: { projectId: string }) {
 
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const project = yield* getProject(projectId);
+      const [project, costItems, logItems] = yield* Effect.all([
+        getProject(projectId),
+        getCostItems(projectId),
+        getLogItems(projectId)
+      ]);
 
       return (
         <div className="container mx-auto px-4 py-8">
           <ProjectHeader project={project} />
 
-          <div className="mt-8 border rounded-lg bg-card p-6">
-            <p className="text-muted-foreground text-sm">
-              Timeline and financial tracking coming soon...
-            </p>
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
+            <CostItemList projectId={projectId} costItems={costItems} />
+            <Timeline logItems={logItems} />
           </div>
         </div>
       );

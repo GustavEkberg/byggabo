@@ -43,7 +43,7 @@
         "User can edit and delete cost items",
         "Deleting cost item removes it from timeline"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "functional-3",
