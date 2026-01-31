@@ -28,7 +28,7 @@
         "User can archive project (soft delete)",
         "Projects list page shows only user's non-archived projects"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "functional-2",

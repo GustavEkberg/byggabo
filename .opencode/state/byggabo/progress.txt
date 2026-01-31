@@ -10,7 +10,9 @@ Started: 2026-01-31
 - **ID generation**: `createId()` from `@paralleldrive/cuid2`
 - **Money fields**: `decimal('amount', { precision: 10, scale: 2 })`
 - **Enum columns**: `text('status', { enum: ['VALUE1', 'VALUE2'] })`
-- **reference_repo exclusion**: Add to tsconfig.json exclude array
+- **reference_repo exclusion**: Add to tsconfig.json exclude array, vitest.config.ts exclude array
+- **Dialog component**: Created custom `components/ui/dialog.tsx` using Base UI `@base-ui/react/dialog`
+- **Server actions pattern**: One action per file, use Schema validation, Match.value for error handling
 
 ---
 
@@ -23,3 +25,25 @@ Started: 2026-01-31
 - Files: `lib/services/db/schema.ts` (lines 110-358), `tsconfig.json`
 - **Learnings:** reference_repo is for visual reference only, must be excluded from tsc
 - **Note:** db:push requires DATABASE_URL - schema is complete, env setup pending
+
+## Task - functional-1
+
+- Implemented project CRUD: create, update, archive
+- Domain queries: `lib/core/project/queries.ts` (getProjects, getProject)
+- Server actions: `create-project-action.ts`, `update-project-action.ts`, `archive-project-action.ts`
+- UI: Dashboard layout, projects list page, project detail page with edit/archive dialogs
+- Files:
+  - `lib/core/project/queries.ts`
+  - `lib/core/project/create-project-action.ts`
+  - `lib/core/project/update-project-action.ts`
+  - `lib/core/project/archive-project-action.ts`
+  - `app/(dashboard)/layout.tsx`
+  - `app/(dashboard)/projects/page.tsx`
+  - `app/(dashboard)/projects/project-list.tsx`
+  - `app/(dashboard)/projects/create-project-dialog.tsx`
+  - `app/(dashboard)/projects/[id]/page.tsx`
+  - `app/(dashboard)/projects/[id]/project-header.tsx`
+  - `app/(dashboard)/projects/[id]/edit-project-dialog.tsx`
+  - `components/ui/dialog.tsx`
+  - `vitest.config.ts` (exclude reference_repo)
+- **Learnings:** PRD step mentions "POST /api/project/create" but correct pattern is server actions, not API routes
