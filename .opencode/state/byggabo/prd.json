@@ -1,0 +1,187 @@
+{
+  "prdName": "byggabo",
+  "tasks": [
+    {
+      "id": "db-1",
+      "category": "db",
+      "description": "Create database schema for projects, cost items, contacts, quotations, invoices, and log items",
+      "steps": [
+        "Project table exists with id, name, description, status, userId, timestamps",
+        "CostItem table exists with id, projectId, name, description, amount, date, receiptFileUrl",
+        "Contact table exists with id, userId, name, email, phone, company",
+        "Quotation table exists with id, projectId, contactId, description, amount, status, fileUrl",
+        "Invoice table exists with id, projectId, quotationId, description, amount, fileUrl, isPaid",
+        "LogItem table exists with id, projectId, type, referenceId, description, createdAt",
+        "Relations defined between all tables",
+        "Run pnpm db:push successfully"
+      ],
+      "passes": false
+    },
+    {
+      "id": "functional-1",
+      "category": "functional",
+      "description": "Users can create, edit, and archive projects",
+      "steps": [
+        "POST /api/project/create creates project with name and description",
+        "Project appears in database with correct userId",
+        "User can edit project name and description",
+        "User can archive project (soft delete)",
+        "Projects list page shows only user's non-archived projects"
+      ],
+      "passes": false
+    },
+    {
+      "id": "functional-2",
+      "category": "functional",
+      "description": "Users can manage cost items with receipt uploads",
+      "steps": [
+        "User can add cost item with name, description, amount, date",
+        "Cost item appears in database linked to project",
+        "File upload for receipts via S3 signed URL works",
+        "Receipt file URL saved to cost item",
+        "Cost item appears in project timeline",
+        "User can edit and delete cost items",
+        "Deleting cost item removes it from timeline"
+      ],
+      "passes": false
+    },
+    {
+      "id": "functional-3",
+      "category": "functional",
+      "description": "Users can manage contacts for contractors",
+      "steps": [
+        "User can create contact with name, email, phone, company",
+        "Contact appears in database with userId",
+        "Contacts page lists all user's contacts",
+        "Contact can be created inline when adding quotation",
+        "Contact details can be edited"
+      ],
+      "passes": false
+    },
+    {
+      "id": "functional-4",
+      "category": "functional",
+      "description": "Users can create and manage quotations",
+      "steps": [
+        "User can add quotation with description, amount, contact, receivedDate",
+        "Quotation status can be set to pending/accepted/rejected",
+        "File upload for quotation PDFs works via S3",
+        "Quotation appears in project timeline",
+        "Quotations list shows on project detail page",
+        "User can update quotation status"
+      ],
+      "passes": false
+    },
+    {
+      "id": "functional-5",
+      "category": "functional",
+      "description": "Users can convert quotations to invoices",
+      "steps": [
+        "User can click 'Convert to Invoice' on accepted quotation",
+        "Invoice created with link to original quotation",
+        "Invoice has description, amount, invoiceDate, isPaid fields",
+        "File upload for invoice PDFs works",
+        "Invoice appears in project timeline",
+        "Converting updates project actual spending calculation"
+      ],
+      "passes": false
+    },
+    {
+      "id": "ui-1",
+      "category": "ui",
+      "description": "Project timeline displays all activities chronologically",
+      "steps": [
+        "Timeline shows cost items, quotations, invoices, and comments",
+        "Events sorted by date, newest first",
+        "Each event shows type icon, date, and description",
+        "User can add manual comments to timeline",
+        "Timeline is filterable by event type"
+      ],
+      "passes": false
+    },
+    {
+      "id": "ui-2",
+      "category": "ui",
+      "description": "Financial dashboard shows estimated vs actual spending",
+      "steps": [
+        "Project detail shows estimated total (sum of accepted quotations)",
+        "Project detail shows actual total (sum of cost items + invoices)",
+        "Visual progress bar shows actual vs estimated ratio",
+        "Green color when under budget, red when over",
+        "SEK currency formatting displays correctly with 'kr' symbol"
+      ],
+      "passes": false
+    },
+    {
+      "id": "ui-3",
+      "category": "ui",
+      "description": "Landing page and dashboard layout match reference repo style",
+      "steps": [
+        "Landing page uses card-based design with rounded corners",
+        "Colors match reference: oklch color system, green/red for financial data",
+        "Mobile-first responsive design works at all breakpoints",
+        "Navigation header with project list and contacts links",
+        "Project list page shows card grid with summary info"
+      ],
+      "passes": false
+    },
+    {
+      "id": "security-1",
+      "category": "security",
+      "description": "All data is isolated per user (multi-tenant)",
+      "steps": [
+        "All queries filter by authenticated userId",
+        "User cannot access other users' projects",
+        "User cannot access other users' contacts",
+        "User cannot access other users' cost items, quotations, or invoices",
+        "Attempting to access another user's data returns 404 or redirects"
+      ],
+      "passes": false
+    },
+    {
+      "id": "cleanup-1",
+      "category": "cleanup",
+      "description": "Remove example Post files and update documentation",
+      "steps": [
+        "Delete example post files from lib/core/post/",
+        "Remove post table from schema or keep only if needed",
+        "Update AGENTS.md with Byggabo-specific domain information",
+        "Verify pnpm tsc passes with no errors",
+        "Verify pnpm lint passes with no errors"
+      ],
+      "passes": false
+    }
+  ],
+  "context": {
+    "patterns": [
+      "Effect-TS database access: use yield* inside Effect.gen, never await",
+      "Server actions: one action per file ending in -action.ts",
+      "RSC pattern: Suspense + Content with dynamic = 'force-dynamic' for auth pages",
+      "File uploads: S3 signed URL pattern - getUploadUrlAction then client upload",
+      "Visual style: Tailwind CSS 4, card-based UI, oklch colors, SEK currency"
+    ],
+    "keyFiles": [
+      "lib/services/db/schema.ts - add new tables",
+      "lib/layers.ts - AppLayer composition",
+      "lib/services/s3/live-layer.ts - S3 file uploads",
+      "app/(dashboard)/ - main app pages",
+      "lib/core/project/ - project domain logic",
+      "lib/core/cost-item/ - cost item domain logic",
+      "lib/core/contact/ - contact domain logic",
+      "lib/core/quotation/ - quotation domain logic",
+      "lib/core/invoice/ - invoice domain logic",
+      "lib/core/log-item/ - timeline domain logic"
+    ],
+    "nonGoals": [
+      "Payment processing - not an invoicing system for contractors",
+      "Real-time collaboration - no WebSocket updates",
+      "Email notifications - no automated emails",
+      "Advanced reporting - no PDF export",
+      "Project templates - all projects created from scratch",
+      "Recurring cost items - all one-time",
+      "Multi-currency - SEK only",
+      "Mobile native app - responsive web only",
+      "Accounting software integration - manual exports only"
+    ]
+  }
+}
