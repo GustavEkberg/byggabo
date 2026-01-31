@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import type { Contact } from '@/lib/services/db/schema';
 import { updateQuotationAction } from '@/lib/core/quotation/update-quotation-action';
+import { convertToInvoiceAction } from '@/lib/core/invoice/convert-to-invoice-action';
 import { EditQuotationDialog } from './edit-quotation-dialog';
+import { Button } from '@/components/ui/button';
 
 type QuotationWithContact = {
   id: string;
@@ -27,6 +29,7 @@ type QuotationWithContact = {
 type Props = {
   quotation: QuotationWithContact;
   contacts: Contact[];
+  hasInvoice: boolean;
 };
 
 const statusColors = {
@@ -41,8 +44,9 @@ const statusLabels = {
   REJECTED: 'Rejected'
 } as const;
 
-export function QuotationRow({ quotation, contacts }: Props) {
+export function QuotationRow({ quotation, contacts, hasInvoice }: Props) {
   const [updating, setUpdating] = useState(false);
+  const [converting, setConverting] = useState(false);
 
   const handleStatusChange = async (newStatus: 'PENDING' | 'ACCEPTED' | 'REJECTED') => {
     if (newStatus === quotation.status) return;
@@ -60,6 +64,21 @@ export function QuotationRow({ quotation, contacts }: Props) {
     }
 
     toast.success(`Quotation ${statusLabels[newStatus].toLowerCase()}`);
+  };
+
+  const handleConvertToInvoice = async () => {
+    setConverting(true);
+    const result = await convertToInvoiceAction({
+      quotationId: quotation.id
+    });
+    setConverting(false);
+
+    if (result._tag === 'Error') {
+      toast.error(result.message);
+      return;
+    }
+
+    toast.success('Invoice created from quotation');
   };
 
   return (
@@ -112,6 +131,23 @@ export function QuotationRow({ quotation, contacts }: Props) {
           <option value="ACCEPTED">Accepted</option>
           <option value="REJECTED">Rejected</option>
         </select>
+
+        {quotation.status === 'ACCEPTED' && !hasInvoice && (
+          <Button
+            variant="outline"
+            size="xs"
+            onClick={handleConvertToInvoice}
+            disabled={converting}
+          >
+            {converting ? 'Creating...' : 'To Invoice'}
+          </Button>
+        )}
+
+        {hasInvoice && (
+          <span className="text-xs text-muted-foreground px-2 py-1 bg-blue-50 rounded-full">
+            Invoiced
+          </span>
+        )}
 
         <EditQuotationDialog quotation={quotation} contacts={contacts} />
       </div>

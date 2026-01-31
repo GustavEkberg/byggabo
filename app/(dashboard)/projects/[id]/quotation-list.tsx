@@ -22,16 +22,26 @@ type QuotationWithContact = {
   } | null;
 };
 
+type InvoiceWithQuotation = {
+  quotationId: string | null;
+};
+
 type Props = {
   projectId: string;
   quotations: QuotationWithContact[];
+  invoices: InvoiceWithQuotation[];
   contacts: Contact[];
 };
 
-export function QuotationList({ projectId, quotations, contacts }: Props) {
+export function QuotationList({ projectId, quotations, invoices, contacts }: Props) {
   const acceptedTotal = quotations
     .filter(q => q.status === 'ACCEPTED')
     .reduce((sum, q) => sum + parseFloat(q.amount), 0);
+
+  // Set of quotation IDs that already have invoices
+  const quotationsWithInvoice = new Set(
+    invoices.filter(inv => inv.quotationId !== null).map(inv => inv.quotationId)
+  );
 
   return (
     <div className="border rounded-lg bg-card">
@@ -53,7 +63,12 @@ export function QuotationList({ projectId, quotations, contacts }: Props) {
       ) : (
         <div className="divide-y">
           {quotations.map(quotation => (
-            <QuotationRow key={quotation.id} quotation={quotation} contacts={contacts} />
+            <QuotationRow
+              key={quotation.id}
+              quotation={quotation}
+              contacts={contacts}
+              hasInvoice={quotationsWithInvoice.has(quotation.id)}
+            />
           ))}
         </div>
       )}

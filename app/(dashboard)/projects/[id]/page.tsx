@@ -8,9 +8,11 @@ import { getCostItems } from '@/lib/core/cost-item/queries';
 import { getQuotations } from '@/lib/core/quotation/queries';
 import { getContacts } from '@/lib/core/contact/queries';
 import { getLogItems } from '@/lib/core/log-item/queries';
+import { getInvoices } from '@/lib/core/invoice/queries';
 import { ProjectHeader } from './project-header';
 import { CostItemList } from './cost-item-list';
 import { QuotationList } from './quotation-list';
+import { InvoiceList } from './invoice-list';
 import { Timeline } from './timeline';
 
 export const dynamic = 'force-dynamic';
@@ -24,10 +26,11 @@ async function Content({ projectId }: { projectId: string }) {
 
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const [project, costItems, quotations, contacts, logItems] = yield* Effect.all([
+      const [project, costItems, quotations, invoices, contacts, logItems] = yield* Effect.all([
         getProject(projectId),
         getCostItems(projectId),
         getQuotations(projectId),
+        getInvoices(projectId),
         getContacts(),
         getLogItems(projectId)
       ]);
@@ -39,7 +42,13 @@ async function Content({ projectId }: { projectId: string }) {
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
             <div className="space-y-6">
               <CostItemList projectId={projectId} costItems={costItems} />
-              <QuotationList projectId={projectId} quotations={quotations} contacts={contacts} />
+              <QuotationList
+                projectId={projectId}
+                quotations={quotations}
+                invoices={invoices}
+                contacts={contacts}
+              />
+              <InvoiceList invoices={invoices} />
             </div>
             <Timeline logItems={logItems} />
           </div>
