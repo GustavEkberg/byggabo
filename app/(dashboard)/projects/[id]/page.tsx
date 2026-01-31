@@ -10,6 +10,7 @@ import { getContacts } from '@/lib/core/contact/queries';
 import { getLogItems } from '@/lib/core/log-item/queries';
 import { getInvoices } from '@/lib/core/invoice/queries';
 import { ProjectHeader } from './project-header';
+import { FinancialSummary } from './financial-summary';
 import { CostItemList } from './cost-item-list';
 import { QuotationList } from './quotation-list';
 import { InvoiceList } from './invoice-list';
@@ -38,6 +39,10 @@ async function Content({ projectId }: { projectId: string }) {
       return (
         <div className="container mx-auto px-4 py-8">
           <ProjectHeader project={project} />
+
+          <div className="mt-6">
+            <FinancialSummary costItems={costItems} quotations={quotations} invoices={invoices} />
+          </div>
 
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
             <div className="space-y-6">

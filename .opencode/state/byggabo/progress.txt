@@ -145,3 +145,17 @@ Started: 2026-01-31
 - **Learnings:**
   - Type guard for string unions: use explicit equality checks instead of `.includes()` cast to avoid lint errors
   - Timeline filtering: simple `filter === 'ALL' ? items : items.filter()` pattern
+
+## Task - ui-2
+
+- Implemented FinancialSummary component for budget overview
+- Added `formatSEK()` utility for Swedish currency formatting with 'kr' suffix
+- Progress bar with green/red colors based on budget status
+- Breakdown shows cost items vs invoices separately
+- Files:
+  - `lib/utils.ts` (added formatSEK)
+  - `app/(dashboard)/projects/[id]/financial-summary.tsx` (new)
+  - `app/(dashboard)/projects/[id]/page.tsx` (added FinancialSummary)
+- **Learnings:**
+  - Intl.NumberFormat with 'sv-SE' locale for proper thousand separators
+  - Decimal amounts from DB come as strings, need parseFloat

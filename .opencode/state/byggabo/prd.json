@@ -110,7 +110,7 @@
         "Green color when under budget, red when over",
         "SEK currency formatting displays correctly with 'kr' symbol"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "ui-3",
