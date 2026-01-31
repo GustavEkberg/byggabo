@@ -71,3 +71,23 @@ Started: 2026-01-31
   - LogItem records auto-created when cost items added/deleted
   - S3 upload: getUploadUrlAction returns signedUrl + publicUrl, client does PUT to signedUrl
   - NullOr schema for optional fields that can be cleared: `S.optional(S.NullOr(S.String))`
+
+## Task - functional-3
+
+- Implemented contact CRUD
+- Queries: `lib/core/contact/queries.ts` (getContacts, getContact)
+- Server actions: `create-contact-action.ts`, `update-contact-action.ts`
+- UI: Contacts list page with table layout, create/edit dialogs
+- Files:
+  - `lib/core/contact/queries.ts`
+  - `lib/core/contact/create-contact-action.ts`
+  - `lib/core/contact/update-contact-action.ts`
+  - `app/(dashboard)/contacts/page.tsx`
+  - `app/(dashboard)/contacts/contact-list.tsx`
+  - `app/(dashboard)/contacts/contact-row.tsx`
+  - `app/(dashboard)/contacts/create-contact-dialog.tsx`
+  - `app/(dashboard)/contacts/edit-contact-dialog.tsx`
+- **Learnings:**
+  - Controlled dialogs with external open state: use conditional rendering `{open && <Form />}` to reset form state
+  - Avoids useEffect for resetting state (violates react-hooks/set-state-in-effect)
+- **Note:** "Contact can be created inline when adding quotation" will be implemented in functional-4

@@ -56,7 +56,7 @@
         "Contact can be created inline when adding quotation",
         "Contact details can be edited"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "functional-4",
