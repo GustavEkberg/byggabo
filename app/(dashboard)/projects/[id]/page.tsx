@@ -50,7 +50,7 @@ async function Content({ projectId }: { projectId: string }) {
               />
               <InvoiceList invoices={invoices} />
             </div>
-            <Timeline logItems={logItems} />
+            <Timeline projectId={projectId} logItems={logItems} />
           </div>
         </div>
       );

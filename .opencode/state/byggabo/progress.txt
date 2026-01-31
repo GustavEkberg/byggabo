@@ -111,3 +111,37 @@ Started: 2026-01-31
   - Status dropdown: use type guard instead of `as` assertion to satisfy lint rule
   - Inline contact creation: nest contact form inside quotation dialog with toggle
   - LogItem auto-created for new quotations and status changes
+
+## Task - functional-5
+
+- Implemented quotation-to-invoice conversion with full CRUD
+- Queries: `lib/core/invoice/queries.ts` (getInvoices, getInvoice) - includes quotation join
+- Server actions: `convert-to-invoice-action.ts`, `update-invoice-action.ts`
+- UI: Invoice list with paid/unpaid totals, row with checkbox toggle, edit dialog
+- Files:
+  - `lib/core/invoice/queries.ts`
+  - `lib/core/invoice/convert-to-invoice-action.ts`
+  - `lib/core/invoice/update-invoice-action.ts`
+  - `app/(dashboard)/projects/[id]/page.tsx` (updated to fetch invoices)
+  - `app/(dashboard)/projects/[id]/invoice-list.tsx`
+  - `app/(dashboard)/projects/[id]/invoice-row.tsx`
+  - `app/(dashboard)/projects/[id]/edit-invoice-dialog.tsx`
+  - `app/(dashboard)/projects/[id]/quotation-list.tsx` (pass invoices to track hasInvoice)
+  - `app/(dashboard)/projects/[id]/quotation-row.tsx` (add Convert to Invoice button)
+- **Learnings:**
+  - Quotation-to-invoice: pass `invoices` to QuotationList to track which quotations already have invoices
+  - Show "Invoiced" badge instead of "Convert to Invoice" button when invoice exists
+  - LogItem auto-created for invoice creation and isPaid status changes
+
+## Task - ui-1
+
+- Enhanced timeline with filtering and comment support
+- Server action: `lib/core/log-item/add-comment-action.ts` (creates COMMENT log items)
+- Timeline now client component with state for filtering and comment form
+- Files:
+  - `lib/core/log-item/add-comment-action.ts`
+  - `app/(dashboard)/projects/[id]/timeline.tsx` (refactored to client component)
+  - `app/(dashboard)/projects/[id]/page.tsx` (pass projectId to Timeline)
+- **Learnings:**
+  - Type guard for string unions: use explicit equality checks instead of `.includes()` cast to avoid lint errors
+  - Timeline filtering: simple `filter === 'ALL' ? items : items.filter()` pattern

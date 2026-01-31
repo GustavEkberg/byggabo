@@ -84,7 +84,7 @@
         "Invoice appears in project timeline",
         "Converting updates project actual spending calculation"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "ui-1",
@@ -97,7 +97,7 @@
         "User can add manual comments to timeline",
         "Timeline is filterable by event type"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "ui-2",

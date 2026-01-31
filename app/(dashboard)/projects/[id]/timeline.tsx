@@ -1,8 +1,19 @@
+'use client';
+
+import { useState } from 'react';
+import { toast } from 'sonner';
 import type { LogItem } from '@/lib/services/db/schema';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { addCommentAction } from '@/lib/core/log-item/add-comment-action';
 
 type Props = {
+  projectId: string;
   logItems: LogItem[];
 };
+
+const LOG_TYPES = ['COST_ITEM', 'QUOTATION', 'INVOICE', 'COMMENT'] as const;
+type LogType = (typeof LOG_TYPES)[number];
 
 function getTypeIcon(type: LogItem['type']) {
   switch (type) {
@@ -89,21 +100,108 @@ function getTypeLabel(type: LogItem['type']) {
   }
 }
 
-export function Timeline({ logItems }: Props) {
+function isLogType(value: string): value is LogType {
+  return (
+    value === 'COST_ITEM' || value === 'QUOTATION' || value === 'INVOICE' || value === 'COMMENT'
+  );
+}
+
+export function Timeline({ projectId, logItems }: Props) {
+  const [filter, setFilter] = useState<LogType | 'ALL'>('ALL');
+  const [showAddComment, setShowAddComment] = useState(false);
+  const [comment, setComment] = useState('');
+  const [pending, setPending] = useState(false);
+
+  const filteredItems = filter === 'ALL' ? logItems : logItems.filter(item => item.type === filter);
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!comment.trim()) return;
+
+    setPending(true);
+    const result = await addCommentAction({
+      projectId,
+      description: comment.trim()
+    });
+    setPending(false);
+
+    if (result._tag === 'Error') {
+      toast.error(result.message);
+      return;
+    }
+
+    toast.success('Comment added');
+    setComment('');
+    setShowAddComment(false);
+  };
+
   return (
     <div className="border rounded-lg bg-card">
       <div className="p-4 border-b">
-        <h2 className="font-semibold">Timeline</h2>
-        <p className="text-sm text-muted-foreground">{logItems.length} events</p>
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h2 className="font-semibold">Timeline</h2>
+            <p className="text-sm text-muted-foreground">
+              {filteredItems.length} event{filteredItems.length !== 1 ? 's' : ''}
+              {filter !== 'ALL' && ` (${getTypeLabel(filter)})`}
+            </p>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => setShowAddComment(!showAddComment)}>
+            {showAddComment ? 'Cancel' : 'Add Comment'}
+          </Button>
+        </div>
+
+        {showAddComment && (
+          <form onSubmit={handleAddComment} className="mt-4 space-y-2">
+            <Textarea
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              placeholder="Add a note or comment..."
+              maxLength={2000}
+              rows={2}
+            />
+            <div className="flex justify-end">
+              <Button type="submit" size="sm" disabled={pending || !comment.trim()}>
+                {pending ? 'Adding...' : 'Add'}
+              </Button>
+            </div>
+          </form>
+        )}
+
+        <div className="mt-3 flex flex-wrap gap-1">
+          <Button
+            size="sm"
+            variant={filter === 'ALL' ? 'default' : 'outline'}
+            onClick={() => setFilter('ALL')}
+          >
+            All
+          </Button>
+          {LOG_TYPES.map(type => (
+            <Button
+              key={type}
+              size="sm"
+              variant={filter === type ? 'default' : 'outline'}
+              onClick={() => {
+                if (isLogType(type)) {
+                  setFilter(type);
+                }
+              }}
+            >
+              {getTypeLabel(type)}
+            </Button>
+          ))}
+        </div>
       </div>
 
-      {logItems.length === 0 ? (
+      {filteredItems.length === 0 ? (
         <div className="p-6 text-center text-muted-foreground text-sm">
-          No activity yet. Add costs, quotations, or invoices.
+          {filter === 'ALL'
+            ? 'No activity yet. Add costs, quotations, or invoices.'
+            : `No ${getTypeLabel(filter).toLowerCase()} events.`}
         </div>
       ) : (
         <div className="divide-y max-h-96 overflow-y-auto">
-          {logItems.map(item => (
+          {filteredItems.map(item => (
             <div key={item.id} className="flex gap-3 p-4">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
                 {getTypeIcon(item.type)}
@@ -116,7 +214,9 @@ export function Timeline({ logItems }: Props) {
                     {item.createdAt.toLocaleDateString('sv-SE')}
                   </span>
                 </p>
-                <p className="text-sm text-muted-foreground truncate">{item.description}</p>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {item.description}
+                </p>
               </div>
             </div>
           ))}
