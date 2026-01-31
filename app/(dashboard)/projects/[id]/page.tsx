@@ -5,9 +5,12 @@ import { NextEffect } from '@/lib/next-effect';
 import { AppLayer } from '@/lib/layers';
 import { getProject } from '@/lib/core/project/queries';
 import { getCostItems } from '@/lib/core/cost-item/queries';
+import { getQuotations } from '@/lib/core/quotation/queries';
+import { getContacts } from '@/lib/core/contact/queries';
 import { getLogItems } from '@/lib/core/log-item/queries';
 import { ProjectHeader } from './project-header';
 import { CostItemList } from './cost-item-list';
+import { QuotationList } from './quotation-list';
 import { Timeline } from './timeline';
 
 export const dynamic = 'force-dynamic';
@@ -21,9 +24,11 @@ async function Content({ projectId }: { projectId: string }) {
 
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const [project, costItems, logItems] = yield* Effect.all([
+      const [project, costItems, quotations, contacts, logItems] = yield* Effect.all([
         getProject(projectId),
         getCostItems(projectId),
+        getQuotations(projectId),
+        getContacts(),
         getLogItems(projectId)
       ]);
 
@@ -32,7 +37,10 @@ async function Content({ projectId }: { projectId: string }) {
           <ProjectHeader project={project} />
 
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
-            <CostItemList projectId={projectId} costItems={costItems} />
+            <div className="space-y-6">
+              <CostItemList projectId={projectId} costItems={costItems} />
+              <QuotationList projectId={projectId} quotations={quotations} contacts={contacts} />
+            </div>
             <Timeline logItems={logItems} />
           </div>
         </div>

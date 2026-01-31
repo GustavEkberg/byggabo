@@ -70,7 +70,7 @@
         "Quotations list shows on project detail page",
         "User can update quotation status"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "functional-5",

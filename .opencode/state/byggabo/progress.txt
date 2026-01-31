@@ -91,3 +91,23 @@ Started: 2026-01-31
   - Controlled dialogs with external open state: use conditional rendering `{open && <Form />}` to reset form state
   - Avoids useEffect for resetting state (violates react-hooks/set-state-in-effect)
 - **Note:** "Contact can be created inline when adding quotation" will be implemented in functional-4
+
+## Task - functional-4
+
+- Implemented quotation CRUD with status management and file uploads
+- Queries: `lib/core/quotation/queries.ts` (getQuotations, getQuotation) - includes contact join
+- Server actions: `create-quotation-action.ts`, `update-quotation-action.ts`
+- UI: Quotation list with status dropdown, create/edit dialogs, inline contact creation
+- Files:
+  - `lib/core/quotation/queries.ts`
+  - `lib/core/quotation/create-quotation-action.ts`
+  - `lib/core/quotation/update-quotation-action.ts`
+  - `app/(dashboard)/projects/[id]/page.tsx` (updated to fetch quotations + contacts)
+  - `app/(dashboard)/projects/[id]/quotation-list.tsx`
+  - `app/(dashboard)/projects/[id]/quotation-row.tsx`
+  - `app/(dashboard)/projects/[id]/create-quotation-dialog.tsx`
+  - `app/(dashboard)/projects/[id]/edit-quotation-dialog.tsx`
+- **Learnings:**
+  - Status dropdown: use type guard instead of `as` assertion to satisfy lint rule
+  - Inline contact creation: nest contact form inside quotation dialog with toggle
+  - LogItem auto-created for new quotations and status changes
