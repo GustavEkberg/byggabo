@@ -31,29 +31,6 @@ export const user = pgTable('user', {
 export type User = typeof user.$inferSelect;
 export type InsertUser = typeof user.$inferInsert;
 
-////////////////////////////////////////////////////////////////////////
-// EXAMPLE - Post table
-////////////////////////////////////////////////////////////////////////
-export const post = pgTable('post', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  title: text('title').notNull(),
-  content: text('content'),
-  published: boolean('published').notNull().default(false),
-  userId: text('userId')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt')
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date())
-});
-
-export type Post = typeof post.$inferSelect;
-export type InsertPost = typeof post.$inferInsert;
-
 export const session = pgTable('session', {
   id: text('id').primaryKey(),
   expiresAt: timestamp('expiresAt').notNull(),
@@ -244,7 +221,6 @@ export type InsertLogItem = typeof logItem.$inferInsert;
 export const relations = defineRelations(
   {
     user,
-    post,
     session,
     account,
     verification,
@@ -257,10 +233,6 @@ export const relations = defineRelations(
   },
   r => ({
     user: {
-      posts: r.many.post({
-        from: r.user.id,
-        to: r.post.userId
-      }),
       projects: r.many.project({
         from: r.user.id,
         to: r.project.userId
@@ -268,13 +240,6 @@ export const relations = defineRelations(
       contacts: r.many.contact({
         from: r.user.id,
         to: r.contact.userId
-      })
-    },
-    post: {
-      author: r.one.user({
-        from: r.post.userId,
-        to: r.user.id,
-        optional: false
       })
     },
     project: {

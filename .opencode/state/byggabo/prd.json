@@ -136,7 +136,7 @@
         "User cannot access other users' cost items, quotations, or invoices",
         "Attempting to access another user's data returns 404 or redirects"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "cleanup-1",
@@ -149,7 +149,7 @@
         "Verify pnpm tsc passes with no errors",
         "Verify pnpm lint passes with no errors"
       ],
-      "passes": false
+      "passes": true
     }
   ],
   "context": {

@@ -1,12 +1,11 @@
-# PROJECT KNOWLEDGE BASE
+# BYGGABO - PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-01-17
-**Commit:** 1753789
-**Branch:** main
+**Application:** Byggabo - Home improvement project tracker
+**Stack:** Next.js 16 App Router, Effect-TS, Drizzle ORM (PostgreSQL/Neon), better-auth, Tailwind CSS 4
 
 ## OVERVIEW
 
-Next.js 16 App Router application with Effect-TS service architecture, Drizzle ORM (PostgreSQL/Neon), better-auth authentication, nuqs URL state management, and Tailwind CSS 4.
+Byggabo helps homeowners track renovation projects, manage contractor quotations, record cost items with receipts, convert accepted quotes to invoices, and monitor budgets. All data is user-isolated (multi-tenant). Currency is SEK only.
 
 ## CRITICAL RULES
 
@@ -39,20 +38,29 @@ See `specs/EFFECT_BEST_PRACTICES.md` for detailed explanations and alternatives.
 ## STRUCTURE
 
 ```
-init/
+byggabo/
 ├── app/                    # Next.js App Router pages
 │   ├── (auth)/             # Auth route group (login, OTP, logout)
-│   ├── (dashboard)/        # Empty - future dashboard
-│   └── api/                # API routes (auth catch-all, example)
-├── components/ui/          # Modified shadcn/ui + custom components (see AGENTS.md)
+│   ├── (dashboard)/        # Main app pages (projects, contacts)
+│   │   ├── projects/       # Project list and detail pages
+│   │   └── contacts/       # Contacts management
+│   └── api/                # API routes (auth catch-all)
+├── components/ui/          # Modified shadcn/ui + custom components
 ├── lib/
-│   ├── services/           # Effect-TS service layer (see AGENTS.md)
-│   ├── core/               # Domain logic (each subfolder has own errors)
+│   ├── core/               # Domain logic
+│   │   ├── project/        # Project CRUD
+│   │   ├── contact/        # Contact CRUD
+│   │   ├── cost-item/      # Cost item with receipts
+│   │   ├── quotation/      # Quotation with status
+│   │   ├── invoice/        # Invoice from quotation
+│   │   ├── log-item/       # Timeline/activity log
+│   │   ├── file/           # S3 upload/download actions
+│   │   └── errors/         # Domain errors
+│   ├── services/           # Effect-TS service layer
 │   ├── next-effect/        # Effect-TS/Next.js adapter
-│   ├── schemas/            # Validation schemas
 │   ├── layers.ts           # AppLayer composition
-│   └── utils.ts            # Utilities (cn helper)
-└── lib/utils.ts            # Utilities (cn helper)
+│   └── utils.ts            # Utilities (cn, formatSEK)
+└── specs/                  # Architecture specifications
 ```
 
 ## WHERE TO LOOK
@@ -97,8 +105,8 @@ init/
 
 ### File Naming
 
-- **All files use kebab-case** - `search-params.ts`, `post-list.tsx`, `live-layer.ts`
-- **Server actions** end in `-action.ts` - `delete-post-action.ts`
+- **All files use kebab-case** - `search-params.ts`, `project-list.tsx`, `live-layer.ts`
+- **Server actions** end in `-action.ts` - `archive-project-action.ts`
 - **URL state definitions** - `search-params.ts` in the route directory
 
 ### Effect-TS Service Pattern
@@ -192,21 +200,21 @@ See `specs/DATA_ACCESS_PATTERNS.md` for full details. Summary:
 **Server Action Pattern:**
 
 ```typescript
-// lib/core/post/delete-post-action.ts
+// lib/core/project/archive-project-action.ts
 'use server'
 
-export const deletePostAction = async (postId: Post['id']) => {
+export const archiveProjectAction = async (projectId: Project['id']) => {
   return await NextEffect.runPromise(
     Effect.gen(function* () {
       const session = yield* getSession()
-      yield* deletePost(postId)
+      yield* archiveProject(projectId, session.user.id)
     }).pipe(
-      Effect.withSpan('action.post.delete'),
+      Effect.withSpan('action.project.archive'),
       Effect.provide(AppLayer),
       Effect.scoped,
       Effect.matchEffect({
         onFailure: error => /* handle errors */,
-        onSuccess: () => Effect.sync(() => revalidatePath('/posts'))
+        onSuccess: () => Effect.sync(() => revalidatePath('/projects'))
       })
     )
   )
@@ -219,7 +227,6 @@ export const deletePostAction = async (postId: Post['id']) => {
 - **React Compiler enabled** - automatic memoization (experimental)
 - **Drizzle beta** - using `1.0.0-beta.11`, may have breaking changes
 - Effect v4 migration: services designed for easy `Effect.Service` → `ServiceMap.Service` transition
-- **Delete example files after setup** - Example schemas (post), sample routes, and template files are scaffolding only. Remove once real structure established
 
 ## SUBDIRECTORY DOCS
 

@@ -13,6 +13,7 @@ Started: 2026-01-31
 - **reference_repo exclusion**: Add to tsconfig.json exclude array, vitest.config.ts exclude array
 - **Dialog component**: Created custom `components/ui/dialog.tsx` using Base UI `@base-ui/react/dialog`
 - **Server actions pattern**: One action per file, use Schema validation, Match.value for error handling
+- **Multi-tenant security**: All queries/actions verify userId ownership; return NotFoundError (not Unauthorized) to avoid leaking existence
 
 ---
 
@@ -180,3 +181,18 @@ Started: 2026-01-31
   - SQL aggregates with Drizzle: use `sql<T>` typed template strings in select
   - Sticky header: `sticky top-0 z-50 backdrop-blur bg-background/95`
   - Mobile-first nav: hide desktop links on mobile with `hidden sm:flex`, show in dropdown
+
+## Task - cleanup-1
+
+- Removed example post files and routes
+- Deleted: `app/page.tsx` (old), `app/search-params.ts`, `app/post-*.tsx`, `app/api/example/`
+- Created new `app/page.tsx` that redirects to `/projects`
+- Removed post table and relations from schema
+- Updated AGENTS.md with Byggabo-specific domain info
+- Files:
+  - `app/page.tsx` (replaced with redirect)
+  - `lib/services/db/schema.ts` (removed post table and relations)
+  - `AGENTS.md` (updated overview, structure, examples)
+- **Learnings:**
+  - Root page redirect: simple `redirect('/projects')` in RSC
+  - Schema cleanup: remember to remove from both table definition AND defineRelations()
