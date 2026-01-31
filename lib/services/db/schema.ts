@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, decimal } from 'drizzle-orm/pg-core';
 import { defineRelations } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
@@ -104,20 +104,255 @@ export const verification = pgTable('verification', {
 });
 
 ////////////////////////////////////////////////////////////////////////
+// BYGGABO DOMAIN - Project management tables
+////////////////////////////////////////////////////////////////////////
+
+export const project = pgTable('project', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text('name').notNull(),
+  description: text('description'),
+  status: text('status', { enum: ['ACTIVE', 'ARCHIVED'] })
+    .notNull()
+    .default('ACTIVE'),
+  userId: text('userId')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt')
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date())
+});
+
+export type Project = typeof project.$inferSelect;
+export type InsertProject = typeof project.$inferInsert;
+
+export const contact = pgTable('contact', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  userId: text('userId')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  email: text('email'),
+  phone: text('phone'),
+  company: text('company'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt')
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date())
+});
+
+export type Contact = typeof contact.$inferSelect;
+export type InsertContact = typeof contact.$inferInsert;
+
+export const costItem = pgTable('costItem', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  projectId: text('projectId')
+    .notNull()
+    .references(() => project.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description'),
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  date: timestamp('date').notNull().defaultNow(),
+  receiptFileUrl: text('receiptFileUrl'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt')
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date())
+});
+
+export type CostItem = typeof costItem.$inferSelect;
+export type InsertCostItem = typeof costItem.$inferInsert;
+
+export const quotation = pgTable('quotation', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  projectId: text('projectId')
+    .notNull()
+    .references(() => project.id, { onDelete: 'cascade' }),
+  contactId: text('contactId').references(() => contact.id, { onDelete: 'set null' }),
+  description: text('description').notNull(),
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  status: text('status', { enum: ['PENDING', 'ACCEPTED', 'REJECTED'] })
+    .notNull()
+    .default('PENDING'),
+  receivedDate: timestamp('receivedDate').notNull().defaultNow(),
+  fileUrl: text('fileUrl'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt')
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date())
+});
+
+export type Quotation = typeof quotation.$inferSelect;
+export type InsertQuotation = typeof quotation.$inferInsert;
+
+export const invoice = pgTable('invoice', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  projectId: text('projectId')
+    .notNull()
+    .references(() => project.id, { onDelete: 'cascade' }),
+  quotationId: text('quotationId').references(() => quotation.id, { onDelete: 'set null' }),
+  description: text('description').notNull(),
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  invoiceDate: timestamp('invoiceDate').notNull().defaultNow(),
+  isPaid: boolean('isPaid').notNull().default(false),
+  fileUrl: text('fileUrl'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt')
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date())
+});
+
+export type Invoice = typeof invoice.$inferSelect;
+export type InsertInvoice = typeof invoice.$inferInsert;
+
+export const logItem = pgTable('logItem', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  projectId: text('projectId')
+    .notNull()
+    .references(() => project.id, { onDelete: 'cascade' }),
+  type: text('type', {
+    enum: ['COST_ITEM', 'QUOTATION', 'INVOICE', 'COMMENT']
+  }).notNull(),
+  referenceId: text('referenceId'),
+  description: text('description').notNull(),
+  createdAt: timestamp('createdAt').notNull().defaultNow()
+});
+
+export type LogItem = typeof logItem.$inferSelect;
+export type InsertLogItem = typeof logItem.$inferInsert;
+
+////////////////////////////////////////////////////////////////////////
 // RELATIONS - Drizzle v1.0 RQB v2 API
 ////////////////////////////////////////////////////////////////////////
-export const relations = defineRelations({ user, post, session, account, verification }, r => ({
-  user: {
-    posts: r.many.post({
-      from: r.user.id,
-      to: r.post.userId
-    })
+export const relations = defineRelations(
+  {
+    user,
+    post,
+    session,
+    account,
+    verification,
+    project,
+    contact,
+    costItem,
+    quotation,
+    invoice,
+    logItem
   },
-  post: {
-    author: r.one.user({
-      from: r.post.userId,
-      to: r.user.id,
-      optional: false
-    })
-  }
-}));
+  r => ({
+    user: {
+      posts: r.many.post({
+        from: r.user.id,
+        to: r.post.userId
+      }),
+      projects: r.many.project({
+        from: r.user.id,
+        to: r.project.userId
+      }),
+      contacts: r.many.contact({
+        from: r.user.id,
+        to: r.contact.userId
+      })
+    },
+    post: {
+      author: r.one.user({
+        from: r.post.userId,
+        to: r.user.id,
+        optional: false
+      })
+    },
+    project: {
+      user: r.one.user({
+        from: r.project.userId,
+        to: r.user.id,
+        optional: false
+      }),
+      costItems: r.many.costItem({
+        from: r.project.id,
+        to: r.costItem.projectId
+      }),
+      quotations: r.many.quotation({
+        from: r.project.id,
+        to: r.quotation.projectId
+      }),
+      invoices: r.many.invoice({
+        from: r.project.id,
+        to: r.invoice.projectId
+      }),
+      logItems: r.many.logItem({
+        from: r.project.id,
+        to: r.logItem.projectId
+      })
+    },
+    contact: {
+      user: r.one.user({
+        from: r.contact.userId,
+        to: r.user.id,
+        optional: false
+      }),
+      quotations: r.many.quotation({
+        from: r.contact.id,
+        to: r.quotation.contactId
+      })
+    },
+    costItem: {
+      project: r.one.project({
+        from: r.costItem.projectId,
+        to: r.project.id,
+        optional: false
+      })
+    },
+    quotation: {
+      project: r.one.project({
+        from: r.quotation.projectId,
+        to: r.project.id,
+        optional: false
+      }),
+      contact: r.one.contact({
+        from: r.quotation.contactId,
+        to: r.contact.id,
+        optional: true
+      }),
+      invoice: r.one.invoice({
+        from: r.quotation.id,
+        to: r.invoice.quotationId,
+        optional: true
+      })
+    },
+    invoice: {
+      project: r.one.project({
+        from: r.invoice.projectId,
+        to: r.project.id,
+        optional: false
+      }),
+      quotation: r.one.quotation({
+        from: r.invoice.quotationId,
+        to: r.quotation.id,
+        optional: true
+      })
+    },
+    logItem: {
+      project: r.one.project({
+        from: r.logItem.projectId,
+        to: r.project.id,
+        optional: false
+      })
+    }
+  })
+);

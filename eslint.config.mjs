@@ -35,7 +35,9 @@ const eslintConfig = defineConfig([
     '.next/**',
     'out/**',
     'build/**',
-    'next-env.d.ts'
+    'next-env.d.ts',
+    // Reference repo (temporary):
+    'reference_repo/**'
   ])
 ]);
 

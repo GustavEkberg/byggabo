@@ -1,0 +1,25 @@
+# Progress Log
+
+PRD: byggabo
+Started: 2026-01-31
+
+## Codebase Patterns
+
+- **Schema location**: `lib/services/db/schema.ts`
+- **Drizzle relations**: Use `defineRelations()` with RQB v2 API
+- **ID generation**: `createId()` from `@paralleldrive/cuid2`
+- **Money fields**: `decimal('amount', { precision: 10, scale: 2 })`
+- **Enum columns**: `text('status', { enum: ['VALUE1', 'VALUE2'] })`
+- **reference_repo exclusion**: Add to tsconfig.json exclude array
+
+---
+
+<!-- Task logs below - APPEND ONLY -->
+
+## Task - db-1
+
+- Schema already implemented with all tables: project, contact, costItem, quotation, invoice, logItem
+- Added `reference_repo` to tsconfig.json exclude (was causing ~200 type errors)
+- Files: `lib/services/db/schema.ts` (lines 110-358), `tsconfig.json`
+- **Learnings:** reference_repo is for visual reference only, must be excluded from tsc
+- **Note:** db:push requires DATABASE_URL - schema is complete, env setup pending

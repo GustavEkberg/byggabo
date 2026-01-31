@@ -6,10 +6,15 @@ import * as schema from '../db/schema';
 import { emailOTP } from 'better-auth/plugins';
 import { Email } from '../email/live-layer';
 import { AuthApiError, AuthConfigError } from './errors';
-import { drizzle } from 'drizzle-orm/neon-http';
+import { drizzle as drizzleNeon, type NeonHttpDatabase } from 'drizzle-orm/neon-http';
+import { drizzle as drizzleNode, type NodePgDatabase } from 'drizzle-orm/node-postgres';
+import pg from 'pg';
 
-// Auth database service (internal) - uses Neon HTTP driver for serverless
-class AuthDb extends Context.Tag('@app/AuthDb')<AuthDb, ReturnType<typeof drizzle>>() {}
+// Auth database service (internal) - uses Neon HTTP driver for serverless or local pg
+class AuthDb extends Context.Tag('@app/AuthDb')<
+  AuthDb,
+  NeonHttpDatabase<typeof schema> | NodePgDatabase<typeof schema>
+>() {}
 
 const AuthDbLive = Layer.effect(
   AuthDb,

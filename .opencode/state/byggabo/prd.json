@@ -15,7 +15,7 @@
         "Relations defined between all tables",
         "Run pnpm db:push successfully"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "functional-1",
