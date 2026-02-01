@@ -158,10 +158,11 @@ const MOCK_EVENTS_SE: MockEvent[] = [
     id: '1',
     type: 'quotation',
     project: 'Köksrenovering',
-    description: 'Offert från Snickeri AB',
+    description: 'Offert från @Johan Snickare',
     amount: 45000,
     date: '2026-01-28',
-    user: 'Erik'
+    user: 'Erik',
+    mentionedContact: 'Johan Snickare'
   },
   {
     id: '2',
@@ -185,19 +186,21 @@ const MOCK_EVENTS_SE: MockEvent[] = [
     id: '4',
     type: 'invoice',
     project: 'Altan & uteplats',
-    description: 'Faktura från Trädgård & Design',
+    description: 'Faktura från @Peter Trädgård',
     amount: 8500,
     date: '2026-01-26',
-    user: 'Anna'
+    user: 'Anna',
+    mentionedContact: 'Peter Trädgård'
   },
   {
     id: '5',
     type: 'quotation',
     project: 'Badrumsrenovering',
-    description: 'Offert från Rörjouren',
+    description: 'Offert från @Maria Rör',
     amount: 28000,
     date: '2026-01-25',
-    user: 'Erik'
+    user: 'Erik',
+    mentionedContact: 'Maria Rör'
   },
   {
     id: '6',
@@ -269,10 +272,11 @@ const MOCK_EVENTS_EU: MockEvent[] = [
     id: '1',
     type: 'quotation',
     project: 'Kitchen Remodel',
-    description: 'Quote from Cabinet Co.',
+    description: 'Quote from @Mike Carpenter',
     amount: 4500,
     date: '2026-01-28',
-    user: 'James'
+    user: 'James',
+    mentionedContact: 'Mike Carpenter'
   },
   {
     id: '2',
@@ -296,19 +300,21 @@ const MOCK_EVENTS_EU: MockEvent[] = [
     id: '4',
     type: 'invoice',
     project: 'Garden & Patio',
-    description: 'Invoice from Landscape Pro',
+    description: 'Invoice from @Tom Landscaper',
     amount: 850,
     date: '2026-01-26',
-    user: 'Sarah'
+    user: 'Sarah',
+    mentionedContact: 'Tom Landscaper'
   },
   {
     id: '5',
     type: 'quotation',
     project: 'Bathroom Update',
-    description: 'Quote from PlumbRight',
+    description: 'Quote from @Lisa Plumber',
     amount: 2800,
     date: '2026-01-25',
-    user: 'James'
+    user: 'James',
+    mentionedContact: 'Lisa Plumber'
   },
   {
     id: '6',
