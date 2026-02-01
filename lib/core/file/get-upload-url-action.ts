@@ -3,7 +3,7 @@
 import { Effect, Match } from 'effect';
 import { AppLayer } from '@/lib/layers';
 import { NextEffect } from '@/lib/next-effect';
-import { getSession } from '@/lib/services/auth/get-session';
+import { getSessionWithProperty } from '@/lib/services/auth/get-session';
 import { S3 } from '@/lib/services/s3/live-layer';
 
 type GetUploadUrlInput = {
@@ -32,18 +32,19 @@ type GetUploadUrlInput = {
 export const getUploadUrlAction = async (input: GetUploadUrlInput) => {
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const session = yield* getSession();
+      const { propertyId, user } = yield* getSessionWithProperty();
       const s3 = yield* S3;
 
       yield* Effect.annotateCurrentSpan({
-        'user.id': session.user.id,
+        'user.id': user.id,
+        'property.id': propertyId,
         'file.name': input.fileName,
         'file.folder': input.folder
       });
 
-      // Generate unique key: folder/userId/timestamp-filename
-      // This prevents collisions and organizes files by user
-      const key = `${input.folder}/${session.user.id}/${Date.now()}-${input.fileName}`;
+      // Generate unique key: folder/propertyId/timestamp-filename
+      // This organizes files by property so all household members share access
+      const key = `${input.folder}/${propertyId}/${Date.now()}-${input.fileName}`;
 
       // Signed URL expires in 5 minutes - enough time for upload
       const signedUrl = yield* s3.createSignedUrl(key, 300);
@@ -68,8 +69,9 @@ export const getUploadUrlAction = async (input: GetUploadUrlInput) => {
       Effect.scoped,
       Effect.matchEffect({
         onFailure: error =>
-          Match.value(error._tag).pipe(
-            Match.when('UnauthenticatedError', () => NextEffect.redirect('/login')),
+          Match.value(error).pipe(
+            Match.tag('UnauthenticatedError', () => NextEffect.redirect('/login')),
+            Match.tag('NoPropertyError', () => NextEffect.redirect('/login')),
             Match.orElse(() =>
               Effect.succeed({
                 _tag: 'Error' as const,

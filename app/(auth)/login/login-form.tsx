@@ -8,10 +8,16 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { formatEmail } from '@/lib/utils';
 import { authClient } from '@/lib/services/auth/auth-client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export const LoginForm = () => {
-  const [email, setEmail] = useState('');
+type LoginFormProps = {
+  defaultEmail?: string;
+};
+
+export const LoginForm = ({ defaultEmail }: LoginFormProps) => {
+  const searchParams = useSearchParams();
+  const initialEmail = defaultEmail ?? searchParams.get('email') ?? '';
+  const [email, setEmail] = useState(initialEmail);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isProcessing, startTransition] = useTransition();
   const router = useRouter();

@@ -18,3 +18,7 @@ export class UnauthenticatedError extends Data.TaggedError('UnauthenticatedError
 export class UnauthorizedError extends Data.TaggedError('UnauthorizedError')<{
   message: string;
 }> {}
+
+export class NoPropertyError extends Data.TaggedError('NoPropertyError')<{
+  message: string;
+}> {}

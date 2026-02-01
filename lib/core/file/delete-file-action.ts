@@ -3,7 +3,7 @@
 import { Effect, Match } from 'effect';
 import { AppLayer } from '@/lib/layers';
 import { NextEffect } from '@/lib/next-effect';
-import { getSession } from '@/lib/services/auth/get-session';
+import { getSessionWithProperty } from '@/lib/services/auth/get-session';
 import { S3 } from '@/lib/services/s3/live-layer';
 
 /**
@@ -22,11 +22,11 @@ import { S3 } from '@/lib/services/s3/live-layer';
 export const deleteFileAction = async (fileUrl: string) => {
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const session = yield* getSession();
+      const { user } = yield* getSessionWithProperty();
       const s3 = yield* S3;
 
       yield* Effect.annotateCurrentSpan({
-        'user.id': session.user.id,
+        'user.id': user.id,
         'file.url': fileUrl
       });
 
@@ -45,8 +45,9 @@ export const deleteFileAction = async (fileUrl: string) => {
       Effect.scoped,
       Effect.matchEffect({
         onFailure: error =>
-          Match.value(error._tag).pipe(
-            Match.when('UnauthenticatedError', () => NextEffect.redirect('/login')),
+          Match.value(error).pipe(
+            Match.tag('UnauthenticatedError', () => NextEffect.redirect('/login')),
+            Match.tag('NoPropertyError', () => NextEffect.redirect('/login')),
             Match.orElse(() =>
               Effect.succeed({
                 _tag: 'Error' as const,

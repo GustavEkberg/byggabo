@@ -4,7 +4,7 @@ import { Effect, Match, Schema as S } from 'effect';
 import { revalidatePath } from 'next/cache';
 import { AppLayer } from '@/lib/layers';
 import { NextEffect } from '@/lib/next-effect';
-import { getSession } from '@/lib/services/auth/get-session';
+import { getSessionWithProperty } from '@/lib/services/auth/get-session';
 import { Db } from '@/lib/services/db/live-layer';
 import * as schema from '@/lib/services/db/schema';
 import { eq } from 'drizzle-orm';
@@ -35,16 +35,16 @@ export const updateInvoiceAction = async (input: UpdateInvoiceInput) => {
         )
       );
 
-      const session = yield* getSession();
+      const { propertyId, user } = yield* getSessionWithProperty();
       const db = yield* Db;
 
-      // Get invoice and verify user owns the parent project
+      // Get invoice and verify project belongs to property
       const [existing] = yield* db
         .select({
           invoice: schema.invoice,
           project: {
             id: schema.project.id,
-            userId: schema.project.userId
+            propertyId: schema.project.propertyId
           }
         })
         .from(schema.invoice)
@@ -52,7 +52,7 @@ export const updateInvoiceAction = async (input: UpdateInvoiceInput) => {
         .where(eq(schema.invoice.id, parsed.invoiceId))
         .limit(1);
 
-      if (!existing || existing.project.userId !== session.user.id) {
+      if (!existing || existing.project.propertyId !== propertyId) {
         return yield* new NotFoundError({
           message: 'Invoice not found',
           entity: 'invoice',
@@ -61,7 +61,7 @@ export const updateInvoiceAction = async (input: UpdateInvoiceInput) => {
       }
 
       yield* Effect.annotateCurrentSpan({
-        'user.id': session.user.id,
+        'user.id': user.id,
         'invoice.id': parsed.invoiceId
       });
 
@@ -99,18 +99,19 @@ export const updateInvoiceAction = async (input: UpdateInvoiceInput) => {
       Effect.scoped,
       Effect.matchEffect({
         onFailure: error =>
-          Match.value(error._tag).pipe(
-            Match.when('UnauthenticatedError', () => NextEffect.redirect('/login')),
-            Match.when('NotFoundError', () =>
+          Match.value(error).pipe(
+            Match.tag('UnauthenticatedError', () => NextEffect.redirect('/login')),
+            Match.tag('NoPropertyError', () => NextEffect.redirect('/login')),
+            Match.tag('NotFoundError', e =>
               Effect.succeed({
                 _tag: 'Error' as const,
-                message: error.message
+                message: e.message
               })
             ),
-            Match.when('ValidationError', () =>
+            Match.tag('ValidationError', e =>
               Effect.succeed({
                 _tag: 'Error' as const,
-                message: error.message
+                message: e.message
               })
             ),
             Match.orElse(() =>

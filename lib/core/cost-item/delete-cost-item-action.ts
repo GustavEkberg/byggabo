@@ -4,7 +4,7 @@ import { Effect, Match } from 'effect';
 import { revalidatePath } from 'next/cache';
 import { AppLayer } from '@/lib/layers';
 import { NextEffect } from '@/lib/next-effect';
-import { getSession } from '@/lib/services/auth/get-session';
+import { getSessionWithProperty } from '@/lib/services/auth/get-session';
 import { Db } from '@/lib/services/db/live-layer';
 import * as schema from '@/lib/services/db/schema';
 import { eq } from 'drizzle-orm';
@@ -13,7 +13,7 @@ import { NotFoundError } from '@/lib/core/errors';
 export const deleteCostItemAction = async (costItemId: string) => {
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const session = yield* getSession();
+      const { propertyId, user } = yield* getSessionWithProperty();
       const db = yield* Db;
 
       // Get cost item with project to verify ownership
@@ -22,7 +22,7 @@ export const deleteCostItemAction = async (costItemId: string) => {
           costItem: schema.costItem,
           project: {
             id: schema.project.id,
-            userId: schema.project.userId
+            propertyId: schema.project.propertyId
           }
         })
         .from(schema.costItem)
@@ -30,7 +30,7 @@ export const deleteCostItemAction = async (costItemId: string) => {
         .where(eq(schema.costItem.id, costItemId))
         .limit(1);
 
-      if (!existing || existing.project.userId !== session.user.id) {
+      if (!existing || existing.project.propertyId !== propertyId) {
         return yield* new NotFoundError({
           message: 'Cost item not found',
           entity: 'costItem',
@@ -41,7 +41,7 @@ export const deleteCostItemAction = async (costItemId: string) => {
       const projectId = existing.project.id;
 
       yield* Effect.annotateCurrentSpan({
-        'user.id': session.user.id,
+        'user.id': user.id,
         'costItem.id': costItemId,
         'project.id': projectId
       });
@@ -61,12 +61,13 @@ export const deleteCostItemAction = async (costItemId: string) => {
       Effect.scoped,
       Effect.matchEffect({
         onFailure: error =>
-          Match.value(error._tag).pipe(
-            Match.when('UnauthenticatedError', () => NextEffect.redirect('/login')),
-            Match.when('NotFoundError', () =>
+          Match.value(error).pipe(
+            Match.tag('UnauthenticatedError', () => NextEffect.redirect('/login')),
+            Match.tag('NoPropertyError', () => NextEffect.redirect('/login')),
+            Match.tag('NotFoundError', e =>
               Effect.succeed({
                 _tag: 'Error' as const,
-                message: error.message
+                message: e.message
               })
             ),
             Match.orElse(() =>

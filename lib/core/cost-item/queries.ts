@@ -1,5 +1,5 @@
 import { Effect } from 'effect';
-import { getSession } from '@/lib/services/auth/get-session';
+import { getSessionWithProperty } from '@/lib/services/auth/get-session';
 import { Db } from '@/lib/services/db/live-layer';
 import * as schema from '@/lib/services/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
@@ -7,18 +7,18 @@ import { NotFoundError } from '@/lib/core/errors';
 
 /**
  * Get all cost items for a project.
- * Verifies user owns the project before returning.
+ * Verifies project belongs to user's property.
  */
 export const getCostItems = (projectId: string) =>
   Effect.gen(function* () {
-    const { user } = yield* getSession();
+    const { propertyId } = yield* getSessionWithProperty();
     const db = yield* Db;
 
-    // Verify user owns the project
+    // Verify project belongs to property
     const [project] = yield* db
       .select({ id: schema.project.id })
       .from(schema.project)
-      .where(and(eq(schema.project.id, projectId), eq(schema.project.userId, user.id)))
+      .where(and(eq(schema.project.id, projectId), eq(schema.project.propertyId, propertyId)))
       .limit(1);
 
     if (!project) {
@@ -40,11 +40,11 @@ export const getCostItems = (projectId: string) =>
 
 /**
  * Get a single cost item by ID.
- * Verifies user owns the parent project.
+ * Verifies parent project belongs to user's property.
  */
 export const getCostItem = (costItemId: string) =>
   Effect.gen(function* () {
-    const { user } = yield* getSession();
+    const { propertyId } = yield* getSessionWithProperty();
     const db = yield* Db;
 
     const [costItem] = yield* db
@@ -52,7 +52,7 @@ export const getCostItem = (costItemId: string) =>
         costItem: schema.costItem,
         project: {
           id: schema.project.id,
-          userId: schema.project.userId
+          propertyId: schema.project.propertyId
         }
       })
       .from(schema.costItem)
@@ -60,7 +60,7 @@ export const getCostItem = (costItemId: string) =>
       .where(eq(schema.costItem.id, costItemId))
       .limit(1);
 
-    if (!costItem || costItem.project.userId !== user.id) {
+    if (!costItem || costItem.project.propertyId !== propertyId) {
       return yield* new NotFoundError({
         message: 'Cost item not found',
         entity: 'costItem',

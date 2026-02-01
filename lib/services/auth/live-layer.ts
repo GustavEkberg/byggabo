@@ -8,6 +8,7 @@ import { Email } from '../email/live-layer';
 import { AuthApiError, AuthConfigError } from './errors';
 import { drizzle as drizzleNeon, type NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import { drizzle as drizzleNode, type NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { eq } from 'drizzle-orm';
 import pg from 'pg';
 
 // Auth database service (internal) - uses Neon HTTP driver for serverless or local pg
@@ -89,12 +90,58 @@ export class Auth extends Effect.Service<Auth>()('@app/Auth', {
         provider: 'pg',
         schema
       }),
+      databaseHooks: {
+        user: {
+          create: {
+            async after(user) {
+              // Check if there's a pending invite for this email
+              const [invite] = await authDb
+                .select()
+                .from(schema.propertyInvite)
+                .where(eq(schema.propertyInvite.email, user.email))
+                .limit(1);
+
+              if (invite && !invite.acceptedAt && invite.expiresAt > new Date()) {
+                // Accept the invite - join existing property
+                await authDb
+                  .update(schema.user)
+                  .set({ propertyId: invite.propertyId })
+                  .where(eq(schema.user.id, user.id));
+
+                // Mark invite as accepted
+                await authDb
+                  .update(schema.propertyInvite)
+                  .set({ acceptedAt: new Date() })
+                  .where(eq(schema.propertyInvite.id, invite.id));
+              } else {
+                // Create a new property for the user
+                const [property] = await authDb
+                  .insert(schema.property)
+                  .values({
+                    name: `${user.name}'s Property`
+                  })
+                  .returning();
+
+                await authDb
+                  .update(schema.user)
+                  .set({ propertyId: property.id })
+                  .where(eq(schema.user.id, user.id));
+              }
+            }
+          }
+        }
+      },
       user: {
         additionalFields: {
           role: {
             type: 'string',
             required: true,
             defaultValue: 'USER',
+            input: false
+          },
+          propertyId: {
+            type: 'string',
+            required: false,
             input: false
           }
         }

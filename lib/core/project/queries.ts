@@ -1,5 +1,5 @@
 import { Effect } from 'effect';
-import { getSession } from '@/lib/services/auth/get-session';
+import { getSessionWithProperty } from '@/lib/services/auth/get-session';
 import { Db } from '@/lib/services/db/live-layer';
 import * as schema from '@/lib/services/db/schema';
 import { eq, and, desc, sql, type SQL } from 'drizzle-orm';
@@ -11,10 +11,10 @@ type GetProjectsParams = {
 
 export const getProjects = (params: GetProjectsParams = {}) =>
   Effect.gen(function* () {
-    const { user } = yield* getSession();
+    const { propertyId } = yield* getSessionWithProperty();
     const db = yield* Db;
 
-    const conditions: SQL[] = [eq(schema.project.userId, user.id)];
+    const conditions: SQL[] = [eq(schema.project.propertyId, propertyId)];
 
     if (!params.includeArchived) {
       conditions.push(eq(schema.project.status, 'ACTIVE'));
@@ -39,10 +39,10 @@ export type ProjectWithSummary = schema.Project & {
 
 export const getProjectsWithSummary = (params: GetProjectsParams = {}) =>
   Effect.gen(function* () {
-    const { user } = yield* getSession();
+    const { propertyId } = yield* getSessionWithProperty();
     const db = yield* Db;
 
-    const conditions: SQL[] = [eq(schema.project.userId, user.id)];
+    const conditions: SQL[] = [eq(schema.project.propertyId, propertyId)];
 
     if (!params.includeArchived) {
       conditions.push(eq(schema.project.status, 'ACTIVE'));
@@ -55,7 +55,7 @@ export const getProjectsWithSummary = (params: GetProjectsParams = {}) =>
         name: schema.project.name,
         description: schema.project.description,
         status: schema.project.status,
-        userId: schema.project.userId,
+        propertyId: schema.project.propertyId,
         createdAt: schema.project.createdAt,
         updatedAt: schema.project.updatedAt,
         // Estimated: sum of accepted quotations
@@ -111,13 +111,13 @@ export const getProjectsWithSummary = (params: GetProjectsParams = {}) =>
 
 export const getProject = (projectId: string) =>
   Effect.gen(function* () {
-    const { user } = yield* getSession();
+    const { propertyId } = yield* getSessionWithProperty();
     const db = yield* Db;
 
     const [project] = yield* db
       .select()
       .from(schema.project)
-      .where(and(eq(schema.project.id, projectId), eq(schema.project.userId, user.id)))
+      .where(and(eq(schema.project.id, projectId), eq(schema.project.propertyId, propertyId)))
       .limit(1);
 
     if (!project) {

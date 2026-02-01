@@ -4,7 +4,7 @@ import { Effect, Match, Schema as S } from 'effect';
 import { revalidatePath } from 'next/cache';
 import { AppLayer } from '@/lib/layers';
 import { NextEffect } from '@/lib/next-effect';
-import { getSession } from '@/lib/services/auth/get-session';
+import { getSessionWithProperty } from '@/lib/services/auth/get-session';
 import { Db } from '@/lib/services/db/live-layer';
 import * as schema from '@/lib/services/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -35,16 +35,16 @@ export const updateQuotationAction = async (input: UpdateQuotationInput) => {
         )
       );
 
-      const session = yield* getSession();
+      const { propertyId, user } = yield* getSessionWithProperty();
       const db = yield* Db;
 
-      // Get quotation and verify user owns the parent project
+      // Get quotation and verify project belongs to property
       const [existing] = yield* db
         .select({
           quotation: schema.quotation,
           project: {
             id: schema.project.id,
-            userId: schema.project.userId
+            propertyId: schema.project.propertyId
           }
         })
         .from(schema.quotation)
@@ -52,7 +52,7 @@ export const updateQuotationAction = async (input: UpdateQuotationInput) => {
         .where(eq(schema.quotation.id, parsed.quotationId))
         .limit(1);
 
-      if (!existing || existing.project.userId !== session.user.id) {
+      if (!existing || existing.project.propertyId !== propertyId) {
         return yield* new NotFoundError({
           message: 'Quotation not found',
           entity: 'quotation',
@@ -60,13 +60,13 @@ export const updateQuotationAction = async (input: UpdateQuotationInput) => {
         });
       }
 
-      // If contactId provided, verify user owns the contact
+      // If contactId provided, verify contact belongs to property
       if (parsed.contactId !== undefined && parsed.contactId !== null) {
         const [contact] = yield* db
           .select({ id: schema.contact.id })
           .from(schema.contact)
           .where(
-            and(eq(schema.contact.id, parsed.contactId), eq(schema.contact.userId, session.user.id))
+            and(eq(schema.contact.id, parsed.contactId), eq(schema.contact.propertyId, propertyId))
           )
           .limit(1);
 
@@ -80,7 +80,7 @@ export const updateQuotationAction = async (input: UpdateQuotationInput) => {
       }
 
       yield* Effect.annotateCurrentSpan({
-        'user.id': session.user.id,
+        'user.id': user.id,
         'quotation.id': parsed.quotationId
       });
 
@@ -118,18 +118,19 @@ export const updateQuotationAction = async (input: UpdateQuotationInput) => {
       Effect.scoped,
       Effect.matchEffect({
         onFailure: error =>
-          Match.value(error._tag).pipe(
-            Match.when('UnauthenticatedError', () => NextEffect.redirect('/login')),
-            Match.when('NotFoundError', () =>
+          Match.value(error).pipe(
+            Match.tag('UnauthenticatedError', () => NextEffect.redirect('/login')),
+            Match.tag('NoPropertyError', () => NextEffect.redirect('/login')),
+            Match.tag('NotFoundError', e =>
               Effect.succeed({
                 _tag: 'Error' as const,
-                message: error.message
+                message: e.message
               })
             ),
-            Match.when('ValidationError', () =>
+            Match.tag('ValidationError', e =>
               Effect.succeed({
                 _tag: 'Error' as const,
-                message: error.message
+                message: e.message
               })
             ),
             Match.orElse(() =>

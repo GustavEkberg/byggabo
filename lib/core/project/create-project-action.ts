@@ -4,7 +4,7 @@ import { Effect, Match, Schema as S } from 'effect';
 import { revalidatePath } from 'next/cache';
 import { AppLayer } from '@/lib/layers';
 import { NextEffect } from '@/lib/next-effect';
-import { getSession } from '@/lib/services/auth/get-session';
+import { getSessionWithProperty } from '@/lib/services/auth/get-session';
 import { Db } from '@/lib/services/db/live-layer';
 import * as schema from '@/lib/services/db/schema';
 import { ValidationError } from '@/lib/core/errors';
@@ -29,11 +29,11 @@ export const createProjectAction = async (input: CreateProjectInput) => {
         )
       );
 
-      const session = yield* getSession();
+      const { propertyId, user } = yield* getSessionWithProperty();
       const db = yield* Db;
 
       yield* Effect.annotateCurrentSpan({
-        'user.id': session.user.id,
+        'user.id': user.id,
         'project.name': parsed.name
       });
 
@@ -42,7 +42,7 @@ export const createProjectAction = async (input: CreateProjectInput) => {
         .values({
           name: parsed.name,
           description: parsed.description,
-          userId: session.user.id
+          propertyId
         })
         .returning();
 
@@ -55,12 +55,13 @@ export const createProjectAction = async (input: CreateProjectInput) => {
       Effect.scoped,
       Effect.matchEffect({
         onFailure: error =>
-          Match.value(error._tag).pipe(
-            Match.when('UnauthenticatedError', () => NextEffect.redirect('/login')),
-            Match.when('ValidationError', () =>
+          Match.value(error).pipe(
+            Match.tag('UnauthenticatedError', () => NextEffect.redirect('/login')),
+            Match.tag('NoPropertyError', () => NextEffect.redirect('/login')),
+            Match.tag('ValidationError', e =>
               Effect.succeed({
                 _tag: 'Error' as const,
-                message: error.message
+                message: e.message
               })
             ),
             Match.orElse(() =>

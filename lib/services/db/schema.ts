@@ -3,6 +3,24 @@ import { defineRelations } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
 ////////////////////////////////////////////////////////////////////////
+// PROPERTY - Multi-user household/property grouping
+////////////////////////////////////////////////////////////////////////
+export const property = pgTable('property', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text('name').notNull(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt')
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date())
+});
+
+export type Property = typeof property.$inferSelect;
+export type InsertProperty = typeof property.$inferInsert;
+
+////////////////////////////////////////////////////////////////////////
 // AUTH - Better-auth expects singular model names
 ////////////////////////////////////////////////////////////////////////
 export const user = pgTable('user', {
@@ -21,6 +39,9 @@ export const user = pgTable('user', {
   })
     .notNull()
     .default('USER'),
+
+  // Property membership
+  propertyId: text('propertyId').references(() => property.id, { onDelete: 'set null' }),
 
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt')
@@ -93,9 +114,9 @@ export const project = pgTable('project', {
   status: text('status', { enum: ['ACTIVE', 'ARCHIVED'] })
     .notNull()
     .default('ACTIVE'),
-  userId: text('userId')
+  propertyId: text('propertyId')
     .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
+    .references(() => property.id, { onDelete: 'cascade' }),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt')
     .notNull()
@@ -110,9 +131,9 @@ export const contact = pgTable('contact', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => createId()),
-  userId: text('userId')
+  propertyId: text('propertyId')
     .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
+    .references(() => property.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   email: text('email'),
   phone: text('phone'),
@@ -217,10 +238,35 @@ export type LogItem = typeof logItem.$inferSelect;
 export type InsertLogItem = typeof logItem.$inferInsert;
 
 ////////////////////////////////////////////////////////////////////////
+// PROPERTY INVITE - Invite new users to join a property
+////////////////////////////////////////////////////////////////////////
+export const propertyInvite = pgTable('propertyInvite', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  propertyId: text('propertyId')
+    .notNull()
+    .references(() => property.id, { onDelete: 'cascade' }),
+  invitedById: text('invitedById')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  email: text('email').notNull(),
+  token: text('token').notNull().unique(),
+  expiresAt: timestamp('expiresAt').notNull(),
+  acceptedAt: timestamp('acceptedAt'),
+  createdAt: timestamp('createdAt').notNull().defaultNow()
+});
+
+export type PropertyInvite = typeof propertyInvite.$inferSelect;
+export type InsertPropertyInvite = typeof propertyInvite.$inferInsert;
+
+////////////////////////////////////////////////////////////////////////
 // RELATIONS - Drizzle v1.0 RQB v2 API
 ////////////////////////////////////////////////////////////////////////
 export const relations = defineRelations(
   {
+    property,
+    propertyInvite,
     user,
     session,
     account,
@@ -233,20 +279,47 @@ export const relations = defineRelations(
     logItem
   },
   r => ({
-    user: {
+    property: {
+      members: r.many.user({
+        from: r.property.id,
+        to: r.user.propertyId
+      }),
       projects: r.many.project({
-        from: r.user.id,
-        to: r.project.userId
+        from: r.property.id,
+        to: r.project.propertyId
       }),
       contacts: r.many.contact({
-        from: r.user.id,
-        to: r.contact.userId
+        from: r.property.id,
+        to: r.contact.propertyId
+      }),
+      invites: r.many.propertyInvite({
+        from: r.property.id,
+        to: r.propertyInvite.propertyId
+      })
+    },
+    propertyInvite: {
+      property: r.one.property({
+        from: r.propertyInvite.propertyId,
+        to: r.property.id,
+        optional: false
+      }),
+      invitedBy: r.one.user({
+        from: r.propertyInvite.invitedById,
+        to: r.user.id,
+        optional: false
+      })
+    },
+    user: {
+      property: r.one.property({
+        from: r.user.propertyId,
+        to: r.property.id,
+        optional: true
       })
     },
     project: {
-      user: r.one.user({
-        from: r.project.userId,
-        to: r.user.id,
+      property: r.one.property({
+        from: r.project.propertyId,
+        to: r.property.id,
         optional: false
       }),
       costItems: r.many.costItem({
@@ -267,9 +340,9 @@ export const relations = defineRelations(
       })
     },
     contact: {
-      user: r.one.user({
-        from: r.contact.userId,
-        to: r.user.id,
+      property: r.one.property({
+        from: r.contact.propertyId,
+        to: r.property.id,
         optional: false
       }),
       quotations: r.many.quotation({

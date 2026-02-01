@@ -1,5 +1,5 @@
 import { Effect } from 'effect';
-import { getSession } from '@/lib/services/auth/get-session';
+import { getSessionWithProperty } from '@/lib/services/auth/get-session';
 import { Db } from '@/lib/services/db/live-layer';
 import * as schema from '@/lib/services/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
@@ -7,18 +7,18 @@ import { NotFoundError } from '@/lib/core/errors';
 
 /**
  * Get all quotations for a project with contact info.
- * Verifies user owns the project before returning.
+ * Verifies project belongs to user's property.
  */
 export const getQuotations = (projectId: string) =>
   Effect.gen(function* () {
-    const { user } = yield* getSession();
+    const { propertyId } = yield* getSessionWithProperty();
     const db = yield* Db;
 
-    // Verify user owns the project
+    // Verify project belongs to property
     const [project] = yield* db
       .select({ id: schema.project.id })
       .from(schema.project)
-      .where(and(eq(schema.project.id, projectId), eq(schema.project.userId, user.id)))
+      .where(and(eq(schema.project.id, projectId), eq(schema.project.propertyId, propertyId)))
       .limit(1);
 
     if (!project) {
@@ -51,11 +51,11 @@ export const getQuotations = (projectId: string) =>
 
 /**
  * Get a single quotation by ID with contact info.
- * Verifies user owns the parent project.
+ * Verifies parent project belongs to user's property.
  */
 export const getQuotation = (quotationId: string) =>
   Effect.gen(function* () {
-    const { user } = yield* getSession();
+    const { propertyId } = yield* getSessionWithProperty();
     const db = yield* Db;
 
     const [result] = yield* db
@@ -63,7 +63,7 @@ export const getQuotation = (quotationId: string) =>
         quotation: schema.quotation,
         project: {
           id: schema.project.id,
-          userId: schema.project.userId
+          propertyId: schema.project.propertyId
         },
         contact: {
           id: schema.contact.id,
@@ -77,7 +77,7 @@ export const getQuotation = (quotationId: string) =>
       .where(eq(schema.quotation.id, quotationId))
       .limit(1);
 
-    if (!result || result.project.userId !== user.id) {
+    if (!result || result.project.propertyId !== propertyId) {
       return yield* new NotFoundError({
         message: 'Quotation not found',
         entity: 'quotation',
