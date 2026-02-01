@@ -155,6 +155,7 @@ export class Auth extends Effect.Service<Auth>()('@app/Auth', {
       },
       plugins: [
         emailOTP({
+          disableSignUp: true,
           async sendVerificationOTP({ email, otp, type }) {
             if (type !== 'sign-in') return;
 
