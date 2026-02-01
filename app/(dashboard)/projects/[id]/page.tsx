@@ -3,6 +3,7 @@ import { Effect, Match } from 'effect';
 import { cookies } from 'next/headers';
 import { NextEffect } from '@/lib/next-effect';
 import { AppLayer } from '@/lib/layers';
+import { getSessionWithProperty } from '@/lib/services/auth/get-session';
 import { getProject } from '@/lib/core/project/queries';
 import { getCostItems } from '@/lib/core/cost-item/queries';
 import { getQuotations } from '@/lib/core/quotation/queries';
@@ -28,6 +29,7 @@ async function Content({ projectId }: { projectId: string }) {
 
   return await NextEffect.runPromise(
     Effect.gen(function* () {
+      const { user } = yield* getSessionWithProperty();
       const [project, costItems, quotations, invoices, contacts, logItems, sections] =
         yield* Effect.all([
           getProject(projectId),
@@ -63,7 +65,7 @@ async function Content({ projectId }: { projectId: string }) {
                 contacts={contacts}
               />
             </div>
-            <Timeline projectId={projectId} logItems={logItems} />
+            <Timeline projectId={projectId} logItems={logItems} currentUserId={user.id} />
           </div>
         </div>
       );

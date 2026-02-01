@@ -3,6 +3,7 @@ import { Effect, Match } from 'effect';
 import { cookies } from 'next/headers';
 import { NextEffect } from '@/lib/next-effect';
 import { AppLayer } from '@/lib/layers';
+import { getSessionWithProperty } from '@/lib/services/auth/get-session';
 import { getProjectsWithSummary } from '@/lib/core/project/queries';
 import { getSections } from '@/lib/core/property-section/queries';
 import { getRecentLogItems } from '@/lib/core/log-item/queries';
@@ -17,6 +18,7 @@ async function Content() {
 
   return await NextEffect.runPromise(
     Effect.gen(function* () {
+      const { user } = yield* getSessionWithProperty();
       const [projects, sections, recentActivity] = yield* Effect.all([
         getProjectsWithSummary(),
         getSections(),
@@ -33,8 +35,8 @@ async function Content() {
             <CreateProjectDialog sections={sections} />
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-5">
-            <div className="lg:col-span-3">
+          <div className="grid gap-8 lg:grid-cols-2">
+            <div>
               {projects.length === 0 ? (
                 <div className="text-center py-12 rounded-xl border bg-card">
                   <p className="text-muted-foreground">No projects yet.</p>
@@ -46,8 +48,8 @@ async function Content() {
                 <ProjectList projects={projects} sections={sections} />
               )}
             </div>
-            <div className="lg:col-span-2">
-              <DashboardTimeline logItems={recentActivity} />
+            <div>
+              <DashboardTimeline logItems={recentActivity} currentUserId={user.id} />
             </div>
           </div>
         </div>

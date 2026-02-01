@@ -5,11 +5,14 @@ import { toast } from 'sonner';
 import type { LogItemWithUser } from '@/lib/core/log-item/queries';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { addCommentAction } from '@/lib/core/log-item/add-comment-action';
+import { updateLogItemAction } from '@/lib/core/log-item/update-log-item-action';
 
 type Props = {
   projectId: string;
   logItems: LogItemWithUser[];
+  currentUserId: string;
 };
 
 const LOG_TYPES = ['COST_ITEM', 'QUOTATION', 'INVOICE', 'COMMENT'] as const;
@@ -106,11 +109,14 @@ function isLogType(value: string): value is LogType {
   );
 }
 
-export function Timeline({ projectId, logItems }: Props) {
+export function Timeline({ projectId, logItems, currentUserId }: Props) {
   const [filter, setFilter] = useState<LogType | 'ALL'>('ALL');
   const [showAddComment, setShowAddComment] = useState(false);
   const [comment, setComment] = useState('');
   const [pending, setPending] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDescription, setEditDescription] = useState('');
+  const [editDate, setEditDate] = useState('');
 
   const filteredItems = filter === 'ALL' ? logItems : logItems.filter(item => item.type === filter);
 
@@ -134,6 +140,41 @@ export function Timeline({ projectId, logItems }: Props) {
     setComment('');
     setShowAddComment(false);
   };
+
+  const startEditing = (item: LogItemWithUser) => {
+    setEditingId(item.id);
+    setEditDescription(item.description);
+    setEditDate(item.createdAt.toISOString().split('T')[0]);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditDescription('');
+    setEditDate('');
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingId || !editDescription.trim()) return;
+
+    setPending(true);
+    const result = await updateLogItemAction({
+      logItemId: editingId,
+      description: editDescription.trim(),
+      createdAt: new Date(editDate)
+    });
+    setPending(false);
+
+    if (result._tag === 'Error') {
+      toast.error(result.message);
+      return;
+    }
+
+    toast.success('Updated');
+    cancelEditing();
+  };
+
+  const canEdit = (item: LogItemWithUser) => item.createdBy?.id === currentUserId;
 
   return (
     <div className="border rounded-lg bg-card">
@@ -206,24 +247,72 @@ export function Timeline({ projectId, logItems }: Props) {
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
                 {getTypeIcon(item.type)}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm">
-                  <span className="font-medium">{getTypeLabel(item.type)}</span>
-                  {item.createdBy && (
-                    <>
-                      <span className="mx-1.5 text-muted-foreground/50">&middot;</span>
-                      <span className="text-muted-foreground">{item.createdBy.name}</span>
-                    </>
-                  )}
-                  <span className="mx-1.5 text-muted-foreground/50">&middot;</span>
-                  <span className="text-muted-foreground">
-                    {item.createdAt.toLocaleDateString('sv-SE')}
-                  </span>
-                </p>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {item.description}
-                </p>
-              </div>
+              {editingId === item.id ? (
+                <form onSubmit={handleUpdate} className="flex-1 space-y-2">
+                  <Textarea
+                    value={editDescription}
+                    onChange={e => setEditDescription(e.target.value)}
+                    maxLength={2000}
+                    rows={2}
+                  />
+                  <Input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} />
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={cancelEditing}
+                      disabled={pending}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" size="sm" disabled={pending || !editDescription.trim()}>
+                      {pending ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm">
+                    <span className="font-medium">{getTypeLabel(item.type)}</span>
+                    {item.createdBy && (
+                      <>
+                        <span className="mx-1.5 text-muted-foreground/50">&middot;</span>
+                        <span className="text-muted-foreground">{item.createdBy.name}</span>
+                      </>
+                    )}
+                    <span className="mx-1.5 text-muted-foreground/50">&middot;</span>
+                    <span className="text-muted-foreground">
+                      {item.createdAt.toLocaleDateString('sv-SE')}
+                    </span>
+                    {canEdit(item) && (
+                      <button
+                        type="button"
+                        onClick={() => startEditing(item)}
+                        className="ml-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                          <path d="m15 5 4 4" />
+                        </svg>
+                      </button>
+                    )}
+                  </p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {item.description}
+                  </p>
+                </div>
+              )}
             </div>
           ))}
         </div>
