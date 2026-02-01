@@ -37,50 +37,54 @@ import {
 import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card';
 import { sendRequestAccessAction } from '@/lib/core/contact/send-request-access-action';
 
-// Mock project data for demo
+// Mock project data for demo (single featured project with financial details)
 type MockProject = {
   name: string;
   section: string;
   sectionColor: string;
-  budget: number;
-  spent: number;
+  description: string;
+  quoteRangeMin: number;
+  quoteRangeMax: number;
+  pendingQuotes: number;
+  costItemsTotal: number;
+  invoicesTotal: number;
+  quotationCount: number;
+  costItemCount: number;
+  invoiceCount: number;
+  lastActivity: string;
 };
 
-const MOCK_PROJECTS_SE: MockProject[] = [
-  { name: 'Koksrenovering', section: 'Kok', sectionColor: '#f97316', budget: 150000, spent: 87500 },
-  {
-    name: 'Badrumsrenovering',
-    section: 'Badrum',
-    sectionColor: '#3b82f6',
-    budget: 85000,
-    spent: 42000
-  },
-  {
-    name: 'Altan & uteplats',
-    section: 'Tradgard',
-    sectionColor: '#22c55e',
-    budget: 45000,
-    spent: 12500
-  }
-];
+const MOCK_PROJECT_SE: MockProject = {
+  name: 'Koksrenovering',
+  section: 'Kok',
+  sectionColor: '#f97316',
+  description: 'Helrenovering av koket med nya vitvaror',
+  quoteRangeMin: 125000,
+  quoteRangeMax: 175000,
+  pendingQuotes: 3,
+  costItemsTotal: 67500,
+  invoicesTotal: 22500,
+  quotationCount: 5,
+  costItemCount: 8,
+  invoiceCount: 2,
+  lastActivity: '2h sedan'
+};
 
-const MOCK_PROJECTS_EU: MockProject[] = [
-  {
-    name: 'Kitchen Remodel',
-    section: 'Kitchen',
-    sectionColor: '#f97316',
-    budget: 15000,
-    spent: 8750
-  },
-  {
-    name: 'Bathroom Update',
-    section: 'Bathroom',
-    sectionColor: '#3b82f6',
-    budget: 8500,
-    spent: 4200
-  },
-  { name: 'Garden & Patio', section: 'Garden', sectionColor: '#22c55e', budget: 4500, spent: 1250 }
-];
+const MOCK_PROJECT_EU: MockProject = {
+  name: 'Kitchen Remodel',
+  section: 'Kitchen',
+  sectionColor: '#f97316',
+  description: 'Full kitchen renovation with new appliances',
+  quoteRangeMin: 12500,
+  quoteRangeMax: 17500,
+  pendingQuotes: 3,
+  costItemsTotal: 6750,
+  invoicesTotal: 2250,
+  quotationCount: 5,
+  costItemCount: 8,
+  invoiceCount: 2,
+  lastActivity: '2h ago'
+};
 
 // Mock contact data for hover cards
 type MockContact = {
@@ -773,31 +777,79 @@ function Header() {
   );
 }
 
-function ProjectCard({ project, currency }: { project: MockProject; currency: 'SEK' | 'EUR' }) {
-  const progress = Math.round((project.spent / project.budget) * 100);
+function DemoProjectCard({ project, currency }: { project: MockProject; currency: 'SEK' | 'EUR' }) {
+  const actual = project.costItemsTotal + project.invoicesTotal;
 
   return (
-    <div className="rounded-lg border bg-card p-4 shadow-sm">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="size-3 rounded-full" style={{ backgroundColor: project.sectionColor }} />
-        <span className="text-xs text-muted-foreground">{project.section}</span>
+    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+      {/* Project Header */}
+      <div className="p-5 border-b">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <div
+                className="size-8 rounded-lg flex items-center justify-center text-white text-sm"
+                style={{ backgroundColor: project.sectionColor }}
+              >
+                <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-lg font-semibold">{project.name}</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">{project.section}</p>
+            <p className="text-muted-foreground mt-1 text-sm">{project.description}</p>
+          </div>
+          <span className="text-sm text-muted-foreground shrink-0">{project.lastActivity}</span>
+        </div>
       </div>
-      <h4 className="font-medium mb-3">{project.name}</h4>
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Spent</span>
-          <span className="font-medium">{formatCurrency(project.spent, currency)}</span>
+
+      {/* Financial Summary */}
+      <div className="p-5">
+        <h3 className="text-lg font-medium mb-4">Budget Overview</h3>
+        <div className="space-y-4">
+          {/* Quote Range */}
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">
+              Quote Range{' '}
+              <span className="text-muted-foreground/60">({project.pendingQuotes} pending)</span>
+            </span>
+            <span className="font-medium">
+              {formatCurrency(project.quoteRangeMin, currency)} –{' '}
+              {formatCurrency(project.quoteRangeMax, currency)}
+            </span>
+          </div>
+
+          {/* Actual */}
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Actual</span>
+            <span className="font-medium">{formatCurrency(actual, currency)}</span>
+          </div>
+
+          {/* Breakdown */}
+          <div className="border-t pt-4 mt-4 space-y-2 text-sm">
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span>Cost items</span>
+              <span>{formatCurrency(project.costItemsTotal, currency)}</span>
+            </div>
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span>Invoices (paid)</span>
+              <span>{formatCurrency(project.invoicesTotal, currency)}</span>
+            </div>
+          </div>
         </div>
-        <div className="h-2 bg-muted rounded-full overflow-hidden">
-          <div
-            className="h-full bg-primary transition-all"
-            style={{ width: `${Math.min(progress, 100)}%` }}
-          />
-        </div>
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{progress}% of budget</span>
-          <span>{formatCurrency(project.budget, currency)}</span>
-        </div>
+      </div>
+
+      {/* Activity counts */}
+      <div className="px-5 py-3 border-t bg-muted/30 flex items-center gap-4 text-xs text-muted-foreground">
+        <span>{project.quotationCount} quotations</span>
+        <span>{project.costItemCount} cost items</span>
+        <span>{project.invoiceCount} invoices</span>
       </div>
     </div>
   );
@@ -809,7 +861,7 @@ type LandingPageProps = {
 
 export function LandingPage({ isSweden = false }: LandingPageProps) {
   const currency = isSweden ? 'SEK' : 'EUR';
-  const projects = isSweden ? MOCK_PROJECTS_SE : MOCK_PROJECTS_EU;
+  const project = isSweden ? MOCK_PROJECT_SE : MOCK_PROJECT_EU;
   const events = isSweden ? MOCK_EVENTS_SE : MOCK_EVENTS_EU;
   const contacts = isSweden ? MOCK_CONTACTS_SE : MOCK_CONTACTS_EU;
 
@@ -840,12 +892,10 @@ export function LandingPage({ isSweden = false }: LandingPageProps) {
               </div>
             </div>
 
-            {/* Right: Demo projects */}
+            {/* Right: Demo project */}
             <div className="flex items-center justify-center">
-              <div className="w-full max-w-md space-y-4">
-                {projects.map(project => (
-                  <ProjectCard key={project.name} project={project} currency={currency} />
-                ))}
+              <div className="w-full max-w-md">
+                <DemoProjectCard project={project} currency={currency} />
               </div>
             </div>
           </div>
