@@ -56,6 +56,7 @@ export const getProjectsWithSummary = (params: GetProjectsParams = {}) =>
         description: schema.project.description,
         status: schema.project.status,
         propertyId: schema.project.propertyId,
+        sectionId: schema.project.sectionId,
         createdAt: schema.project.createdAt,
         updatedAt: schema.project.updatedAt,
         // Estimated: sum of accepted quotations

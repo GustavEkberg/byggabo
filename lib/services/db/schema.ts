@@ -21,6 +21,29 @@ export type Property = typeof property.$inferSelect;
 export type InsertProperty = typeof property.$inferInsert;
 
 ////////////////////////////////////////////////////////////////////////
+// PROPERTY SECTION - Categories for projects (kitchen, garden, etc.)
+////////////////////////////////////////////////////////////////////////
+export const propertySection = pgTable('propertySection', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  propertyId: text('propertyId')
+    .notNull()
+    .references(() => property.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  color: text('color').notNull(), // hex color e.g. #3b82f6
+  sortOrder: text('sortOrder').notNull().default('0'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt')
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date())
+});
+
+export type PropertySection = typeof propertySection.$inferSelect;
+export type InsertPropertySection = typeof propertySection.$inferInsert;
+
+////////////////////////////////////////////////////////////////////////
 // AUTH - Better-auth expects singular model names
 ////////////////////////////////////////////////////////////////////////
 export const user = pgTable('user', {
@@ -117,6 +140,7 @@ export const project = pgTable('project', {
   propertyId: text('propertyId')
     .notNull()
     .references(() => property.id, { onDelete: 'cascade' }),
+  sectionId: text('sectionId').references(() => propertySection.id, { onDelete: 'set null' }),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt')
     .notNull()
@@ -266,6 +290,7 @@ export type InsertPropertyInvite = typeof propertyInvite.$inferInsert;
 export const relations = defineRelations(
   {
     property,
+    propertySection,
     propertyInvite,
     user,
     session,
@@ -284,6 +309,10 @@ export const relations = defineRelations(
         from: r.property.id,
         to: r.user.propertyId
       }),
+      sections: r.many.propertySection({
+        from: r.property.id,
+        to: r.propertySection.propertyId
+      }),
       projects: r.many.project({
         from: r.property.id,
         to: r.project.propertyId
@@ -295,6 +324,17 @@ export const relations = defineRelations(
       invites: r.many.propertyInvite({
         from: r.property.id,
         to: r.propertyInvite.propertyId
+      })
+    },
+    propertySection: {
+      property: r.one.property({
+        from: r.propertySection.propertyId,
+        to: r.property.id,
+        optional: false
+      }),
+      projects: r.many.project({
+        from: r.propertySection.id,
+        to: r.project.sectionId
       })
     },
     propertyInvite: {
@@ -321,6 +361,11 @@ export const relations = defineRelations(
         from: r.project.propertyId,
         to: r.property.id,
         optional: false
+      }),
+      section: r.one.propertySection({
+        from: r.project.sectionId,
+        to: r.propertySection.id,
+        optional: true
       }),
       costItems: r.many.costItem({
         from: r.project.id,

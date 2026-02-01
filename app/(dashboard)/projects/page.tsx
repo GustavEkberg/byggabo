@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { NextEffect } from '@/lib/next-effect';
 import { AppLayer } from '@/lib/layers';
 import { getProjectsWithSummary } from '@/lib/core/project/queries';
+import { getSections } from '@/lib/core/property-section/queries';
 import { ProjectList } from './project-list';
 import { CreateProjectDialog } from './create-project-dialog';
 
@@ -14,7 +15,7 @@ async function Content() {
 
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const projects = yield* getProjectsWithSummary();
+      const [projects, sections] = yield* Effect.all([getProjectsWithSummary(), getSections()]);
 
       return (
         <div className="mx-auto max-w-6xl px-4 py-8">
@@ -23,7 +24,7 @@ async function Content() {
               <h1 className="text-2xl font-semibold">Projects</h1>
               <p className="text-muted-foreground text-sm mt-1">Manage your renovation projects</p>
             </div>
-            <CreateProjectDialog />
+            <CreateProjectDialog sections={sections} />
           </div>
 
           {projects.length === 0 ? (
@@ -34,7 +35,7 @@ async function Content() {
               </p>
             </div>
           ) : (
-            <ProjectList projects={projects} />
+            <ProjectList projects={projects} sections={sections} />
           )}
         </div>
       );

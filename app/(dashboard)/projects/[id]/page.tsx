@@ -9,6 +9,7 @@ import { getQuotations } from '@/lib/core/quotation/queries';
 import { getContacts } from '@/lib/core/contact/queries';
 import { getLogItems } from '@/lib/core/log-item/queries';
 import { getInvoices } from '@/lib/core/invoice/queries';
+import { getSections } from '@/lib/core/property-section/queries';
 import { ProjectHeader } from './project-header';
 import { FinancialSummary } from './financial-summary';
 import { CostItemList } from './cost-item-list';
@@ -27,18 +28,20 @@ async function Content({ projectId }: { projectId: string }) {
 
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const [project, costItems, quotations, invoices, contacts, logItems] = yield* Effect.all([
-        getProject(projectId),
-        getCostItems(projectId),
-        getQuotations(projectId),
-        getInvoices(projectId),
-        getContacts(),
-        getLogItems(projectId)
-      ]);
+      const [project, costItems, quotations, invoices, contacts, logItems, sections] =
+        yield* Effect.all([
+          getProject(projectId),
+          getCostItems(projectId),
+          getQuotations(projectId),
+          getInvoices(projectId),
+          getContacts(),
+          getLogItems(projectId),
+          getSections()
+        ]);
 
       return (
         <div className="mx-auto max-w-6xl px-4 py-8">
-          <ProjectHeader project={project} />
+          <ProjectHeader project={project} sections={sections} />
 
           <div className="mt-6">
             <FinancialSummary costItems={costItems} quotations={quotations} invoices={invoices} />

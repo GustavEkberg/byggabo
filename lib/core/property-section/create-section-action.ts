@@ -2,6 +2,7 @@
 
 import { Effect, Match, Schema as S } from 'effect';
 import { revalidatePath } from 'next/cache';
+import { eq, desc } from 'drizzle-orm';
 import { AppLayer } from '@/lib/layers';
 import { NextEffect } from '@/lib/next-effect';
 import { getSessionWithProperty } from '@/lib/services/auth/get-session';
@@ -9,23 +10,22 @@ import { Db } from '@/lib/services/db/live-layer';
 import * as schema from '@/lib/services/db/schema';
 import { ValidationError } from '@/lib/core/errors';
 
-const CreateProjectInput = S.Struct({
-  name: S.String.pipe(S.minLength(1), S.maxLength(100)),
-  description: S.optional(S.String.pipe(S.maxLength(1000))),
-  sectionId: S.optional(S.NullOr(S.String))
+const CreateSectionInput = S.Struct({
+  name: S.String.pipe(S.minLength(1), S.maxLength(50)),
+  color: S.String.pipe(S.pattern(/^#[0-9a-fA-F]{6}$/))
 });
 
-type CreateProjectInput = S.Schema.Type<typeof CreateProjectInput>;
+type CreateSectionInput = S.Schema.Type<typeof CreateSectionInput>;
 
-export const createProjectAction = async (input: CreateProjectInput) => {
+export const createSectionAction = async (input: CreateSectionInput) => {
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const parsed = yield* S.decodeUnknown(CreateProjectInput)(input).pipe(
+      const parsed = yield* S.decodeUnknown(CreateSectionInput)(input).pipe(
         Effect.mapError(
           () =>
             new ValidationError({
-              message: 'Project name is required (1-100 characters)',
-              field: 'name'
+              message: 'Invalid section data',
+              field: 'input'
             })
         )
       );
@@ -35,23 +35,33 @@ export const createProjectAction = async (input: CreateProjectInput) => {
 
       yield* Effect.annotateCurrentSpan({
         'user.id': user.id,
-        'project.name': parsed.name
+        'section.name': parsed.name
       });
 
-      const [project] = yield* db
-        .insert(schema.project)
+      // Get highest sortOrder to append new section at end
+      const existing = yield* db
+        .select({ sortOrder: schema.propertySection.sortOrder })
+        .from(schema.propertySection)
+        .where(eq(schema.propertySection.propertyId, propertyId))
+        .orderBy(desc(schema.propertySection.sortOrder))
+        .limit(1);
+
+      const nextSortOrder = existing.length > 0 ? String(Number(existing[0].sortOrder) + 1) : '0';
+
+      const [section] = yield* db
+        .insert(schema.propertySection)
         .values({
+          propertyId,
           name: parsed.name,
-          description: parsed.description,
-          sectionId: parsed.sectionId,
-          propertyId
+          color: parsed.color,
+          sortOrder: nextSortOrder
         })
         .returning();
 
-      return project;
+      return section;
     }).pipe(
-      Effect.withSpan('action.project.create', {
-        attributes: { operation: 'project.create' }
+      Effect.withSpan('action.propertySection.create', {
+        attributes: { operation: 'propertySection.create' }
       }),
       Effect.provide(AppLayer),
       Effect.scoped,
@@ -69,14 +79,14 @@ export const createProjectAction = async (input: CreateProjectInput) => {
             Match.orElse(() =>
               Effect.succeed({
                 _tag: 'Error' as const,
-                message: 'Failed to create project'
+                message: 'Failed to create section'
               })
             )
           ),
-        onSuccess: project =>
+        onSuccess: section =>
           Effect.sync(() => {
-            revalidatePath('/projects');
-            return { _tag: 'Success' as const, project };
+            revalidatePath('/settings');
+            return { _tag: 'Success' as const, section };
           })
       })
     )

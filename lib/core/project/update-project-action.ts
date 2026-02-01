@@ -13,7 +13,8 @@ import { ValidationError, NotFoundError } from '@/lib/core/errors';
 const UpdateProjectInput = S.Struct({
   id: S.String.pipe(S.minLength(1)),
   name: S.String.pipe(S.minLength(1), S.maxLength(100)),
-  description: S.optional(S.NullOr(S.String.pipe(S.maxLength(1000))))
+  description: S.optional(S.NullOr(S.String.pipe(S.maxLength(1000)))),
+  sectionId: S.optional(S.NullOr(S.String))
 });
 
 type UpdateProjectInput = S.Schema.Type<typeof UpdateProjectInput>;
@@ -58,7 +59,8 @@ export const updateProjectAction = async (input: UpdateProjectInput) => {
         .update(schema.project)
         .set({
           name: parsed.name,
-          description: parsed.description
+          description: parsed.description,
+          sectionId: parsed.sectionId
         })
         .where(eq(schema.project.id, parsed.id))
         .returning();

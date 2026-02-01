@@ -3,12 +3,16 @@
 import Link from 'next/link';
 import { formatSEK } from '@/lib/utils';
 import type { ProjectWithSummary } from '@/lib/core/project/queries';
+import type { PropertySection } from '@/lib/services/db/schema';
 
 type Props = {
   projects: ProjectWithSummary[];
+  sections: PropertySection[];
 };
 
-export function ProjectList({ projects }: Props) {
+export function ProjectList({ projects, sections }: Props) {
+  const sectionMap = new Map(sections.map(s => [s.id, s]));
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {projects.map(project => {
@@ -16,6 +20,7 @@ export function ProjectList({ projects }: Props) {
         const isOverBudget = hasEstimate && project.actual > project.estimated;
         const percentage = hasEstimate ? (project.actual / project.estimated) * 100 : 0;
         const displayPercentage = Math.min(percentage, 100);
+        const section = project.sectionId ? sectionMap.get(project.sectionId) : null;
 
         return (
           <Link
@@ -23,7 +28,16 @@ export function ProjectList({ projects }: Props) {
             href={`/projects/${project.id}`}
             className="block rounded-xl border bg-card p-5 transition-all hover:border-foreground/20 hover:shadow-sm"
           >
-            <h2 className="font-medium">{project.name}</h2>
+            <div className="flex items-center gap-2">
+              {section && (
+                <span
+                  className="w-3 h-3 rounded-full shrink-0"
+                  style={{ backgroundColor: section.color }}
+                  title={section.name}
+                />
+              )}
+              <h2 className="font-medium">{project.name}</h2>
+            </div>
             {project.description && (
               <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                 {project.description}

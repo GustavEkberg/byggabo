@@ -16,20 +16,37 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { createProjectAction } from '@/lib/core/project/create-project-action';
+import type { PropertySection } from '@/lib/services/db/schema';
 
-export function CreateProjectDialog() {
+type Props = {
+  sections: PropertySection[];
+};
+
+export function CreateProjectDialog({ sections }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [sectionId, setSectionId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPending(true);
 
-    const result = await createProjectAction({ name, description: description || undefined });
+    const result = await createProjectAction({
+      name,
+      description: description || undefined,
+      sectionId
+    });
 
     setPending(false);
 
@@ -42,6 +59,7 @@ export function CreateProjectDialog() {
     setOpen(false);
     setName('');
     setDescription('');
+    setSectionId(null);
     router.push(`/projects/${result.project.id}`);
   };
 
@@ -79,6 +97,39 @@ export function CreateProjectDialog() {
               maxLength={1000}
             />
           </div>
+          {sections.length > 0 && (
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Section</label>
+              <Select value={sectionId ?? ''} onValueChange={v => setSectionId(v || null)}>
+                <SelectTrigger className="w-full">
+                  {sectionId ? (
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="w-3 h-3 rounded-full shrink-0"
+                        style={{
+                          backgroundColor: sections.find(s => s.id === sectionId)?.color
+                        }}
+                      />
+                      {sections.find(s => s.id === sectionId)?.name}
+                    </span>
+                  ) : (
+                    <SelectValue placeholder="Select a section..." />
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  {sections.map(section => (
+                    <SelectItem key={section.id} value={section.id}>
+                      <span
+                        className="w-3 h-3 rounded-full shrink-0"
+                        style={{ backgroundColor: section.color }}
+                      />
+                      {section.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <DialogFooter>
             <DialogClose render={<Button variant="outline" type="button" />}>Cancel</DialogClose>
             <Button type="submit" disabled={pending || !name.trim()}>

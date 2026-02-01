@@ -4,8 +4,12 @@ import { cookies } from 'next/headers';
 import { NextEffect } from '@/lib/next-effect';
 import { AppLayer } from '@/lib/layers';
 import { getPropertyWithMembers, getPendingInvites } from '@/lib/core/property/queries';
+import { getSections } from '@/lib/core/property-section/queries';
 import { MembersList } from './members-list';
 import { InviteForm } from './invite-form';
+import { SectionsList } from './sections-list';
+import { CreateSectionDialog } from './create-section-dialog';
+import { SeedSectionsButton } from './seed-sections-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,9 +18,10 @@ async function Content() {
 
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const [propertyData, pendingInvites] = yield* Effect.all([
+      const [propertyData, pendingInvites, sections] = yield* Effect.all([
         getPropertyWithMembers(),
-        getPendingInvites()
+        getPendingInvites(),
+        getSections()
       ]);
 
       return (
@@ -55,6 +60,20 @@ async function Content() {
                 </div>
               </section>
             )}
+
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-medium">Project Sections</h2>
+                <div className="flex gap-2">
+                  {sections.length === 0 && <SeedSectionsButton />}
+                  <CreateSectionDialog />
+                </div>
+              </div>
+              <p className="text-muted-foreground text-sm">
+                Sections help organize your projects by area of the property.
+              </p>
+              <SectionsList sections={sections} />
+            </section>
           </div>
         </div>
       );
