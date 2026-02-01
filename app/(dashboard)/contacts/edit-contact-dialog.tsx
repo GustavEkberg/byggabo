@@ -13,6 +13,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { updateContactAction } from '@/lib/core/contact/update-contact-action';
 import type { Contact } from '@/lib/services/db/schema';
 
@@ -25,6 +26,7 @@ type Props = {
 function EditContactForm({ contact, onClose }: { contact: Contact; onClose: () => void }) {
   const [pending, setPending] = useState(false);
   const [name, setName] = useState(contact.name);
+  const [description, setDescription] = useState(contact.description || '');
   const [email, setEmail] = useState(contact.email || '');
   const [phone, setPhone] = useState(contact.phone || '');
   const [company, setCompany] = useState(contact.company || '');
@@ -36,6 +38,7 @@ function EditContactForm({ contact, onClose }: { contact: Contact; onClose: () =
     const result = await updateContactAction({
       id: contact.id,
       name,
+      description: description || null,
       email: email || null,
       phone: phone || null,
       company: company || null
@@ -77,6 +80,19 @@ function EditContactForm({ contact, onClose }: { contact: Contact; onClose: () =
           onChange={e => setCompany(e.target.value)}
           placeholder="Acme Construction"
           maxLength={200}
+        />
+      </div>
+      <div className="grid gap-2">
+        <label htmlFor="edit-description" className="text-sm font-medium">
+          Description
+        </label>
+        <Textarea
+          id="edit-description"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          placeholder="Notes about this contact..."
+          maxLength={1000}
+          rows={3}
         />
       </div>
       <div className="grid gap-2">

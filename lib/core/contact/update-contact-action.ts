@@ -13,6 +13,7 @@ import { ValidationError, NotFoundError } from '@/lib/core/errors';
 const UpdateContactInput = S.Struct({
   id: S.String.pipe(S.minLength(1)),
   name: S.String.pipe(S.minLength(1), S.maxLength(200)),
+  description: S.optional(S.NullOr(S.String.pipe(S.maxLength(1000)))),
   email: S.optional(S.NullOr(S.String.pipe(S.maxLength(200)))),
   phone: S.optional(S.NullOr(S.String.pipe(S.maxLength(50)))),
   company: S.optional(S.NullOr(S.String.pipe(S.maxLength(200))))
@@ -60,6 +61,7 @@ export const updateContactAction = async (input: UpdateContactInput) => {
         .update(schema.contact)
         .set({
           name: parsed.name,
+          description: parsed.description,
           email: parsed.email,
           phone: parsed.phone,
           company: parsed.company

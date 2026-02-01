@@ -14,12 +14,14 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { createContactAction } from '@/lib/core/contact/create-contact-action';
 
 export function CreateContactDialog() {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [company, setCompany] = useState('');
@@ -30,6 +32,7 @@ export function CreateContactDialog() {
 
     const result = await createContactAction({
       name,
+      description: description || undefined,
       email: email || undefined,
       phone: phone || undefined,
       company: company || undefined
@@ -45,6 +48,7 @@ export function CreateContactDialog() {
     toast.success('Contact created');
     setOpen(false);
     setName('');
+    setDescription('');
     setEmail('');
     setPhone('');
     setCompany('');
@@ -82,6 +86,19 @@ export function CreateContactDialog() {
               onChange={e => setCompany(e.target.value)}
               placeholder="Acme Construction"
               maxLength={200}
+            />
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="description" className="text-sm font-medium">
+              Description
+            </label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="Notes about this contact..."
+              maxLength={1000}
+              rows={3}
             />
           </div>
           <div className="grid gap-2">
