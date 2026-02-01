@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import type { LogItemWithUser, LogItemMentionInfo } from '@/lib/core/log-item/queries';
 import type { Contact } from '@/lib/services/db/schema';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { MentionInput } from '@/components/ui/mention-input';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
@@ -276,6 +277,7 @@ export function Timeline({
   const [pending, setPending] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState('');
+  const [editAmount, setEditAmount] = useState<string | null>(null);
   const [editDate, setEditDate] = useState<Date | undefined>(undefined);
 
   const filteredItems = filter === 'ALL' ? logItems : logItems.filter(item => item.type === filter);
@@ -316,12 +318,14 @@ export function Timeline({
   const startEditing = (item: TimelineItem) => {
     setEditingId(item.id);
     setEditDescription(item.description);
+    setEditAmount(item.amount);
     setEditDate(item.createdAt);
   };
 
   const cancelEditing = () => {
     setEditingId(null);
     setEditDescription('');
+    setEditAmount(null);
     setEditDate(undefined);
   };
 
@@ -333,6 +337,7 @@ export function Timeline({
     const result = await updateLogItemAction({
       logItemId: editingId,
       description: editDescription.trim(),
+      amount: editAmount,
       createdAt: editDate.toISOString()
     });
     setPending(false);
@@ -447,6 +452,15 @@ export function Timeline({
                     maxLength={2000}
                     rows={2}
                   />
+                  {item.type !== 'COMMENT' && (
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Amount"
+                      value={editAmount ?? ''}
+                      onChange={e => setEditAmount(e.target.value || null)}
+                    />
+                  )}
                   <DateTimePicker value={editDate} onChange={setEditDate} />
                   <div className="flex gap-2 justify-end">
                     <Button
