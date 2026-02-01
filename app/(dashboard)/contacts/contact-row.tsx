@@ -1,24 +1,33 @@
 'use client';
 
 import { useState } from 'react';
-import { Building2, Mail, Phone, User } from 'lucide-react';
-import type { Contact } from '@/lib/services/db/schema';
+import { Building2, Mail, Phone } from 'lucide-react';
+import type { Contact, ContactCategory } from '@/lib/services/db/schema';
 import { Button } from '@/components/ui/button';
+import { SectionIcon } from '@/components/ui/section-icon';
 import { EditContactDialog } from './edit-contact-dialog';
 
 type Props = {
   contact: Contact;
+  categories: ContactCategory[];
 };
 
-export function ContactRow({ contact }: Props) {
+export function ContactRow({ contact, categories }: Props) {
   const [editOpen, setEditOpen] = useState(false);
+  const category = contact.categoryId ? categories.find(c => c.id === contact.categoryId) : null;
 
   return (
     <div className="flex items-center gap-4 rounded-xl border bg-card px-5 py-4 transition-all hover:border-foreground/20 hover:shadow-sm">
-      {/* Avatar/Icon */}
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
-        <User className="size-5 text-muted-foreground" />
-      </div>
+      {/* Category icon or default */}
+      {category ? (
+        <SectionIcon icon={category.icon} color={category.color} size="lg" />
+      ) : (
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
+          <span className="text-sm font-medium text-muted-foreground">
+            {contact.name.charAt(0).toUpperCase()}
+          </span>
+        </div>
+      )}
 
       {/* Main info */}
       <div className="flex-1 min-w-0">
@@ -57,7 +66,12 @@ export function ContactRow({ contact }: Props) {
       <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>
         Edit
       </Button>
-      <EditContactDialog contact={contact} open={editOpen} onOpenChange={setEditOpen} />
+      <EditContactDialog
+        contact={contact}
+        categories={categories}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
     </div>
   );
 }

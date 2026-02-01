@@ -15,12 +15,26 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import { SectionIcon } from '@/components/ui/section-icon';
 import { createContactAction } from '@/lib/core/contact/create-contact-action';
+import type { ContactCategory } from '@/lib/services/db/schema';
 
-export function CreateContactDialog() {
+type Props = {
+  categories: ContactCategory[];
+};
+
+export function CreateContactDialog({ categories }: Props) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [name, setName] = useState('');
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [website, setWebsite] = useState('');
   const [email, setEmail] = useState('');
@@ -33,6 +47,7 @@ export function CreateContactDialog() {
 
     const result = await createContactAction({
       name,
+      categoryId,
       description: description || undefined,
       website: website || undefined,
       email: email || undefined,
@@ -50,6 +65,7 @@ export function CreateContactDialog() {
     toast.success('Contact created');
     setOpen(false);
     setName('');
+    setCategoryId(null);
     setDescription('');
     setWebsite('');
     setEmail('');
@@ -91,6 +107,35 @@ export function CreateContactDialog() {
               maxLength={200}
             />
           </div>
+          {categories.length > 0 && (
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Category</label>
+              <Select value={categoryId ?? ''} onValueChange={v => setCategoryId(v || null)}>
+                <SelectTrigger className="w-full">
+                  {categoryId ? (
+                    <span className="flex items-center gap-2">
+                      <SectionIcon
+                        icon={categories.find(c => c.id === categoryId)?.icon ?? 'users'}
+                        color={categories.find(c => c.id === categoryId)?.color ?? '#6b7280'}
+                        size="sm"
+                      />
+                      {categories.find(c => c.id === categoryId)?.name}
+                    </span>
+                  ) : (
+                    <SelectValue placeholder="Select a category..." />
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map(category => (
+                    <SelectItem key={category.id} value={category.id}>
+                      <SectionIcon icon={category.icon} color={category.color} size="sm" />
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="grid gap-2">
             <label htmlFor="description" className="text-sm font-medium">
               Description

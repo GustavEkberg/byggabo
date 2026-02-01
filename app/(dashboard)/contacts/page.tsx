@@ -4,8 +4,13 @@ import { cookies } from 'next/headers';
 import { NextEffect } from '@/lib/next-effect';
 import { AppLayer } from '@/lib/layers';
 import { getContacts } from '@/lib/core/contact/queries';
+import { getContactCategories } from '@/lib/core/contact-category/queries';
+import { getSessionWithProperty } from '@/lib/services/auth/get-session';
 import { ContactList } from './contact-list';
 import { CreateContactDialog } from './create-contact-dialog';
+import { CategoriesList } from './categories-list';
+import { CreateCategoryDialog } from './create-category-dialog';
+import { SeedCategoriesButton } from './seed-categories-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +19,11 @@ async function Content() {
 
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const contacts = yield* getContacts();
+      const { propertyId } = yield* getSessionWithProperty();
+      const [contacts, categories] = yield* Effect.all([
+        getContacts(),
+        getContactCategories(propertyId)
+      ]);
 
       return (
         <div className="mx-auto max-w-6xl px-4 py-8">
@@ -25,7 +34,7 @@ async function Content() {
                 Contractors and suppliers for your projects
               </p>
             </div>
-            <CreateContactDialog />
+            <CreateContactDialog categories={categories} />
           </div>
 
           {contacts.length === 0 ? (
@@ -36,8 +45,25 @@ async function Content() {
               </p>
             </div>
           ) : (
-            <ContactList contacts={contacts} />
+            <ContactList contacts={contacts} categories={categories} />
           )}
+
+          {/* Categories Section */}
+          <div className="mt-12 pt-8 border-t">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold">Categories</h2>
+                <p className="text-muted-foreground text-sm">
+                  Organize your contacts by trade or type
+                </p>
+              </div>
+              <div className="flex gap-2">
+                {categories.length === 0 && <SeedCategoriesButton />}
+                <CreateCategoryDialog />
+              </div>
+            </div>
+            <CategoriesList categories={categories} />
+          </div>
         </div>
       );
     }).pipe(

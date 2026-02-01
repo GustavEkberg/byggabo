@@ -14,18 +14,36 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import { SectionIcon } from '@/components/ui/section-icon';
 import { updateContactAction } from '@/lib/core/contact/update-contact-action';
-import type { Contact } from '@/lib/services/db/schema';
+import type { Contact, ContactCategory } from '@/lib/services/db/schema';
 
 type Props = {
   contact: Contact;
+  categories: ContactCategory[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-function EditContactForm({ contact, onClose }: { contact: Contact; onClose: () => void }) {
+function EditContactForm({
+  contact,
+  categories,
+  onClose
+}: {
+  contact: Contact;
+  categories: ContactCategory[];
+  onClose: () => void;
+}) {
   const [pending, setPending] = useState(false);
   const [name, setName] = useState(contact.name);
+  const [categoryId, setCategoryId] = useState<string | null>(contact.categoryId);
   const [description, setDescription] = useState(contact.description || '');
   const [website, setWebsite] = useState(contact.website || '');
   const [email, setEmail] = useState(contact.email || '');
@@ -39,6 +57,7 @@ function EditContactForm({ contact, onClose }: { contact: Contact; onClose: () =
     const result = await updateContactAction({
       id: contact.id,
       name,
+      categoryId,
       description: description || null,
       website: website || null,
       email: email || null,
@@ -84,6 +103,35 @@ function EditContactForm({ contact, onClose }: { contact: Contact; onClose: () =
           maxLength={200}
         />
       </div>
+      {categories.length > 0 && (
+        <div className="grid gap-2">
+          <label className="text-sm font-medium">Category</label>
+          <Select value={categoryId ?? ''} onValueChange={v => setCategoryId(v || null)}>
+            <SelectTrigger className="w-full">
+              {categoryId ? (
+                <span className="flex items-center gap-2">
+                  <SectionIcon
+                    icon={categories.find(c => c.id === categoryId)?.icon ?? 'users'}
+                    color={categories.find(c => c.id === categoryId)?.color ?? '#6b7280'}
+                    size="sm"
+                  />
+                  {categories.find(c => c.id === categoryId)?.name}
+                </span>
+              ) : (
+                <SelectValue placeholder="Select a category..." />
+              )}
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map(category => (
+                <SelectItem key={category.id} value={category.id}>
+                  <SectionIcon icon={category.icon} color={category.color} size="sm" />
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       <div className="grid gap-2">
         <label htmlFor="edit-description" className="text-sm font-medium">
           Description
@@ -146,7 +194,7 @@ function EditContactForm({ contact, onClose }: { contact: Contact; onClose: () =
   );
 }
 
-export function EditContactDialog({ contact, open, onOpenChange }: Props) {
+export function EditContactDialog({ contact, categories, open, onOpenChange }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -154,7 +202,13 @@ export function EditContactDialog({ contact, open, onOpenChange }: Props) {
           <DialogTitle>Edit Contact</DialogTitle>
           <DialogDescription>Update contact information.</DialogDescription>
         </DialogHeader>
-        {open && <EditContactForm contact={contact} onClose={() => onOpenChange(false)} />}
+        {open && (
+          <EditContactForm
+            contact={contact}
+            categories={categories}
+            onClose={() => onOpenChange(false)}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

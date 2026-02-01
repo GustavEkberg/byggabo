@@ -49,6 +49,30 @@ export type PropertySection = typeof propertySection.$inferSelect;
 export type InsertPropertySection = typeof propertySection.$inferInsert;
 
 ////////////////////////////////////////////////////////////////////////
+// CONTACT CATEGORY - Categories for contacts (carpenter, plumber, etc.)
+////////////////////////////////////////////////////////////////////////
+export const contactCategory = pgTable('contactCategory', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  propertyId: text('propertyId')
+    .notNull()
+    .references(() => property.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  icon: text('icon').notNull(), // lucide icon name e.g. 'hammer'
+  color: text('color').notNull(), // hex color e.g. #3b82f6
+  sortOrder: text('sortOrder').notNull().default('0'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt')
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date())
+});
+
+export type ContactCategory = typeof contactCategory.$inferSelect;
+export type InsertContactCategory = typeof contactCategory.$inferInsert;
+
+////////////////////////////////////////////////////////////////////////
 // AUTH - Better-auth expects singular model names
 ////////////////////////////////////////////////////////////////////////
 export const user = pgTable('user', {
@@ -163,6 +187,7 @@ export const contact = pgTable('contact', {
   propertyId: text('propertyId')
     .notNull()
     .references(() => property.id, { onDelete: 'cascade' }),
+  categoryId: text('categoryId').references(() => contactCategory.id, { onDelete: 'set null' }),
   name: text('name').notNull(),
   description: text('description'),
   website: text('website'),
@@ -336,6 +361,7 @@ export const relations = defineRelations(
   {
     property,
     propertySection,
+    contactCategory,
     propertyInvite,
     user,
     session,
@@ -370,6 +396,10 @@ export const relations = defineRelations(
       invites: r.many.propertyInvite({
         from: r.property.id,
         to: r.propertyInvite.propertyId
+      }),
+      contactCategories: r.many.contactCategory({
+        from: r.property.id,
+        to: r.contactCategory.propertyId
       })
     },
     propertySection: {
@@ -381,6 +411,17 @@ export const relations = defineRelations(
       projects: r.many.project({
         from: r.propertySection.id,
         to: r.project.sectionId
+      })
+    },
+    contactCategory: {
+      property: r.one.property({
+        from: r.contactCategory.propertyId,
+        to: r.property.id,
+        optional: false
+      }),
+      contacts: r.many.contact({
+        from: r.contactCategory.id,
+        to: r.contact.categoryId
       })
     },
     propertyInvite: {
@@ -439,6 +480,11 @@ export const relations = defineRelations(
         from: r.contact.propertyId,
         to: r.property.id,
         optional: false
+      }),
+      category: r.one.contactCategory({
+        from: r.contact.categoryId,
+        to: r.contactCategory.id,
+        optional: true
       }),
       quotations: r.many.quotation({
         from: r.contact.id,

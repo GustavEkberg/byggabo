@@ -2,6 +2,7 @@
 
 import { Effect, Match, Schema as S } from 'effect';
 import { revalidatePath } from 'next/cache';
+import { eq, desc } from 'drizzle-orm';
 import { AppLayer } from '@/lib/layers';
 import { NextEffect } from '@/lib/next-effect';
 import { getSessionWithProperty } from '@/lib/services/auth/get-session';
@@ -9,26 +10,22 @@ import { Db } from '@/lib/services/db/live-layer';
 import * as schema from '@/lib/services/db/schema';
 import { ValidationError } from '@/lib/core/errors';
 
-const CreateContactInput = S.Struct({
-  name: S.String.pipe(S.minLength(1), S.maxLength(200)),
-  categoryId: S.optional(S.NullOr(S.String)),
-  description: S.optional(S.String.pipe(S.maxLength(1000))),
-  website: S.optional(S.String.pipe(S.maxLength(500))),
-  email: S.optional(S.String.pipe(S.maxLength(200))),
-  phone: S.optional(S.String.pipe(S.maxLength(50))),
-  company: S.optional(S.String.pipe(S.maxLength(200)))
+const CreateCategoryInput = S.Struct({
+  name: S.String.pipe(S.minLength(1), S.maxLength(50)),
+  icon: S.String.pipe(S.minLength(1), S.maxLength(50)),
+  color: S.String.pipe(S.pattern(/^#[0-9a-fA-F]{6}$/))
 });
 
-type CreateContactInput = S.Schema.Type<typeof CreateContactInput>;
+type CreateCategoryInput = S.Schema.Type<typeof CreateCategoryInput>;
 
-export const createContactAction = async (input: CreateContactInput) => {
+export const createContactCategoryAction = async (input: CreateCategoryInput) => {
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const parsed = yield* S.decodeUnknown(CreateContactInput)(input).pipe(
+      const parsed = yield* S.decodeUnknown(CreateCategoryInput)(input).pipe(
         Effect.mapError(
           () =>
             new ValidationError({
-              message: 'Invalid contact data',
+              message: 'Invalid category data',
               field: 'input'
             })
         )
@@ -39,27 +36,34 @@ export const createContactAction = async (input: CreateContactInput) => {
 
       yield* Effect.annotateCurrentSpan({
         'user.id': user.id,
-        'contact.name': parsed.name
+        'category.name': parsed.name
       });
 
-      const [contact] = yield* db
-        .insert(schema.contact)
+      // Get highest sortOrder to append new category at end
+      const existing = yield* db
+        .select({ sortOrder: schema.contactCategory.sortOrder })
+        .from(schema.contactCategory)
+        .where(eq(schema.contactCategory.propertyId, propertyId))
+        .orderBy(desc(schema.contactCategory.sortOrder))
+        .limit(1);
+
+      const nextSortOrder = existing.length > 0 ? String(Number(existing[0].sortOrder) + 1) : '0';
+
+      const [category] = yield* db
+        .insert(schema.contactCategory)
         .values({
           propertyId,
-          categoryId: parsed.categoryId,
           name: parsed.name,
-          description: parsed.description,
-          website: parsed.website,
-          email: parsed.email,
-          phone: parsed.phone,
-          company: parsed.company
+          icon: parsed.icon,
+          color: parsed.color,
+          sortOrder: nextSortOrder
         })
         .returning();
 
-      return contact;
+      return category;
     }).pipe(
-      Effect.withSpan('action.contact.create', {
-        attributes: { operation: 'contact.create' }
+      Effect.withSpan('action.contactCategory.create', {
+        attributes: { operation: 'contactCategory.create' }
       }),
       Effect.provide(AppLayer),
       Effect.scoped,
@@ -77,14 +81,15 @@ export const createContactAction = async (input: CreateContactInput) => {
             Match.orElse(() =>
               Effect.succeed({
                 _tag: 'Error' as const,
-                message: 'Failed to create contact'
+                message: 'Failed to create category'
               })
             )
           ),
-        onSuccess: contact =>
+        onSuccess: category =>
           Effect.sync(() => {
             revalidatePath('/contacts');
-            return { _tag: 'Success' as const, contact };
+            revalidatePath('/settings');
+            return { _tag: 'Success' as const, category };
           })
       })
     )

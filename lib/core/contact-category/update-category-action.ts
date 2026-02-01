@@ -2,35 +2,31 @@
 
 import { Effect, Match, Schema as S } from 'effect';
 import { revalidatePath } from 'next/cache';
+import { eq } from 'drizzle-orm';
 import { AppLayer } from '@/lib/layers';
 import { NextEffect } from '@/lib/next-effect';
 import { getSessionWithProperty } from '@/lib/services/auth/get-session';
 import { Db } from '@/lib/services/db/live-layer';
 import * as schema from '@/lib/services/db/schema';
-import { eq } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '@/lib/core/errors';
 
-const UpdateContactInput = S.Struct({
+const UpdateCategoryInput = S.Struct({
   id: S.String.pipe(S.minLength(1)),
-  name: S.String.pipe(S.minLength(1), S.maxLength(200)),
-  categoryId: S.optional(S.NullOr(S.String)),
-  description: S.optional(S.NullOr(S.String.pipe(S.maxLength(1000)))),
-  website: S.optional(S.NullOr(S.String.pipe(S.maxLength(500)))),
-  email: S.optional(S.NullOr(S.String.pipe(S.maxLength(200)))),
-  phone: S.optional(S.NullOr(S.String.pipe(S.maxLength(50)))),
-  company: S.optional(S.NullOr(S.String.pipe(S.maxLength(200))))
+  name: S.String.pipe(S.minLength(1), S.maxLength(50)),
+  icon: S.String.pipe(S.minLength(1), S.maxLength(50)),
+  color: S.String.pipe(S.pattern(/^#[0-9a-fA-F]{6}$/))
 });
 
-type UpdateContactInput = S.Schema.Type<typeof UpdateContactInput>;
+type UpdateCategoryInput = S.Schema.Type<typeof UpdateCategoryInput>;
 
-export const updateContactAction = async (input: UpdateContactInput) => {
+export const updateContactCategoryAction = async (input: UpdateCategoryInput) => {
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const parsed = yield* S.decodeUnknown(UpdateContactInput)(input).pipe(
+      const parsed = yield* S.decodeUnknown(UpdateCategoryInput)(input).pipe(
         Effect.mapError(
           () =>
             new ValidationError({
-              message: 'Invalid contact data',
+              message: 'Invalid category data',
               field: 'input'
             })
         )
@@ -39,44 +35,40 @@ export const updateContactAction = async (input: UpdateContactInput) => {
       const { propertyId, user } = yield* getSessionWithProperty();
       const db = yield* Db;
 
-      // Verify contact belongs to property
+      // Verify category belongs to property
       const [existing] = yield* db
         .select()
-        .from(schema.contact)
-        .where(eq(schema.contact.id, parsed.id))
+        .from(schema.contactCategory)
+        .where(eq(schema.contactCategory.id, parsed.id))
         .limit(1);
 
       if (!existing || existing.propertyId !== propertyId) {
         return yield* new NotFoundError({
-          message: 'Contact not found',
-          entity: 'contact',
+          message: 'Category not found',
+          entity: 'contactCategory',
           id: parsed.id
         });
       }
 
       yield* Effect.annotateCurrentSpan({
         'user.id': user.id,
-        'contact.id': parsed.id
+        'category.id': parsed.id
       });
 
-      const [contact] = yield* db
-        .update(schema.contact)
+      const [category] = yield* db
+        .update(schema.contactCategory)
         .set({
           name: parsed.name,
-          categoryId: parsed.categoryId,
-          description: parsed.description,
-          website: parsed.website,
-          email: parsed.email,
-          phone: parsed.phone,
-          company: parsed.company
+          icon: parsed.icon,
+          color: parsed.color
         })
-        .where(eq(schema.contact.id, parsed.id))
+        .where(eq(schema.contactCategory.id, parsed.id))
         .returning();
 
-      return contact;
+      return category;
     }).pipe(
-      Effect.withSpan('action.contact.update', {
-        attributes: { operation: 'contact.update' }
+      Effect.withSpan('action.contactCategory.update', {
+        attributes: { operation: 'contactCategory.update' }
       }),
       Effect.provide(AppLayer),
       Effect.scoped,
@@ -100,14 +92,15 @@ export const updateContactAction = async (input: UpdateContactInput) => {
             Match.orElse(() =>
               Effect.succeed({
                 _tag: 'Error' as const,
-                message: 'Failed to update contact'
+                message: 'Failed to update category'
               })
             )
           ),
-        onSuccess: contact =>
+        onSuccess: category =>
           Effect.sync(() => {
             revalidatePath('/contacts');
-            return { _tag: 'Success' as const, contact };
+            revalidatePath('/settings');
+            return { _tag: 'Success' as const, category };
           })
       })
     )

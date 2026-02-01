@@ -21,11 +21,27 @@ import {
   Wrench,
   PaintBucket,
   Hammer,
+  Pipette,
+  Plug,
+  BrickWall,
+  Ruler,
+  HardHat,
+  Truck,
+  Warehouse,
+  Scissors,
+  SprayCan,
+  Thermometer,
+  Wind,
+  Droplets,
+  Zap,
+  Shield,
+  Users,
   type LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const iconMap: Record<string, LucideIcon> = {
+  // Property section icons
   'cooking-pot': CookingPot,
   bath: Bath,
   sofa: Sofa,
@@ -45,7 +61,23 @@ const iconMap: Record<string, LucideIcon> = {
   drill: Drill,
   wrench: Wrench,
   'paint-bucket': PaintBucket,
-  hammer: Hammer
+  hammer: Hammer,
+  // Contact category icons
+  pipette: Pipette,
+  plug: Plug,
+  'brick-wall': BrickWall,
+  ruler: Ruler,
+  'hard-hat': HardHat,
+  truck: Truck,
+  warehouse: Warehouse,
+  scissors: Scissors,
+  'spray-can': SprayCan,
+  thermometer: Thermometer,
+  wind: Wind,
+  droplets: Droplets,
+  zap: Zap,
+  shield: Shield,
+  users: Users
 };
 
 type Props = {
