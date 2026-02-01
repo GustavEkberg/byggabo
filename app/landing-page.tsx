@@ -742,8 +742,11 @@ function Header() {
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-        <Link href="/" className="text-lg font-semibold tracking-tight">
-          <span className="mr-0.5 text-2xl" style={{ WebkitTextStroke: '1.5px currentColor' }}>
+        <Link href="/" className="inline-flex items-center text-lg font-semibold tracking-tight">
+          <span
+            className="-translate-y-0.5 mr-0.5 text-2xl leading-none"
+            style={{ WebkitTextStroke: '1.5px currentColor' }}
+          >
             &#8962;
           </span>
           Byggabo
