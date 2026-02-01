@@ -165,6 +165,7 @@ export const contact = pgTable('contact', {
     .references(() => property.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   description: text('description'),
+  website: text('website'),
   email: text('email'),
   phone: text('phone'),
   company: text('company'),

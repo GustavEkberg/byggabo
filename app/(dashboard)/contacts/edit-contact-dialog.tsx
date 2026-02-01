@@ -27,6 +27,7 @@ function EditContactForm({ contact, onClose }: { contact: Contact; onClose: () =
   const [pending, setPending] = useState(false);
   const [name, setName] = useState(contact.name);
   const [description, setDescription] = useState(contact.description || '');
+  const [website, setWebsite] = useState(contact.website || '');
   const [email, setEmail] = useState(contact.email || '');
   const [phone, setPhone] = useState(contact.phone || '');
   const [company, setCompany] = useState(contact.company || '');
@@ -39,6 +40,7 @@ function EditContactForm({ contact, onClose }: { contact: Contact; onClose: () =
       id: contact.id,
       name,
       description: description || null,
+      website: website || null,
       email: email || null,
       phone: phone || null,
       company: company || null
@@ -93,6 +95,19 @@ function EditContactForm({ contact, onClose }: { contact: Contact; onClose: () =
           placeholder="Notes about this contact..."
           maxLength={1000}
           rows={3}
+        />
+      </div>
+      <div className="grid gap-2">
+        <label htmlFor="edit-website" className="text-sm font-medium">
+          Website
+        </label>
+        <Input
+          id="edit-website"
+          type="url"
+          value={website}
+          onChange={e => setWebsite(e.target.value)}
+          placeholder="https://example.com"
+          maxLength={500}
         />
       </div>
       <div className="grid gap-2">

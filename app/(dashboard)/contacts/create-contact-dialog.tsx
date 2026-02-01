@@ -22,6 +22,7 @@ export function CreateContactDialog() {
   const [pending, setPending] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [website, setWebsite] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [company, setCompany] = useState('');
@@ -33,6 +34,7 @@ export function CreateContactDialog() {
     const result = await createContactAction({
       name,
       description: description || undefined,
+      website: website || undefined,
       email: email || undefined,
       phone: phone || undefined,
       company: company || undefined
@@ -49,6 +51,7 @@ export function CreateContactDialog() {
     setOpen(false);
     setName('');
     setDescription('');
+    setWebsite('');
     setEmail('');
     setPhone('');
     setCompany('');
@@ -99,6 +102,19 @@ export function CreateContactDialog() {
               placeholder="Notes about this contact..."
               maxLength={1000}
               rows={3}
+            />
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="website" className="text-sm font-medium">
+              Website
+            </label>
+            <Input
+              id="website"
+              type="url"
+              value={website}
+              onChange={e => setWebsite(e.target.value)}
+              placeholder="https://example.com"
+              maxLength={500}
             />
           </div>
           <div className="grid gap-2">

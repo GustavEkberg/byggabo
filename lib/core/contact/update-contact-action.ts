@@ -14,6 +14,7 @@ const UpdateContactInput = S.Struct({
   id: S.String.pipe(S.minLength(1)),
   name: S.String.pipe(S.minLength(1), S.maxLength(200)),
   description: S.optional(S.NullOr(S.String.pipe(S.maxLength(1000)))),
+  website: S.optional(S.NullOr(S.String.pipe(S.maxLength(500)))),
   email: S.optional(S.NullOr(S.String.pipe(S.maxLength(200)))),
   phone: S.optional(S.NullOr(S.String.pipe(S.maxLength(50)))),
   company: S.optional(S.NullOr(S.String.pipe(S.maxLength(200))))
@@ -62,6 +63,7 @@ export const updateContactAction = async (input: UpdateContactInput) => {
         .set({
           name: parsed.name,
           description: parsed.description,
+          website: parsed.website,
           email: parsed.email,
           phone: parsed.phone,
           company: parsed.company

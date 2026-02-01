@@ -12,6 +12,7 @@ import { ValidationError } from '@/lib/core/errors';
 const CreateContactInput = S.Struct({
   name: S.String.pipe(S.minLength(1), S.maxLength(200)),
   description: S.optional(S.String.pipe(S.maxLength(1000))),
+  website: S.optional(S.String.pipe(S.maxLength(500))),
   email: S.optional(S.String.pipe(S.maxLength(200))),
   phone: S.optional(S.String.pipe(S.maxLength(50))),
   company: S.optional(S.String.pipe(S.maxLength(200)))
@@ -46,6 +47,7 @@ export const createContactAction = async (input: CreateContactInput) => {
           propertyId,
           name: parsed.name,
           description: parsed.description,
+          website: parsed.website,
           email: parsed.email,
           phone: parsed.phone,
           company: parsed.company
