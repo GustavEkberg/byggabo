@@ -14,6 +14,13 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { updateInvoiceAction } from '@/lib/core/invoice/update-invoice-action';
 import { createContactAction } from '@/lib/core/contact/create-contact-action';
 import { getUploadUrlAction } from '@/lib/core/file/get-upload-url-action';
@@ -279,19 +286,19 @@ export function EditInvoiceDialog({ invoice, contacts }: Props) {
                 </div>
               </div>
             ) : (
-              <select
-                id="edit-contact"
-                value={contactId}
-                onChange={e => setContactId(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="">No contractor selected</option>
-                {contacts.map(contact => (
-                  <option key={contact.id} value={contact.id}>
-                    {contact.company ? `${contact.company} (${contact.name})` : contact.name}
-                  </option>
-                ))}
-              </select>
+              <Select value={contactId} onValueChange={value => setContactId(value ?? '')}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="No contractor selected" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No contractor selected</SelectItem>
+                  {contacts.map(contact => (
+                    <SelectItem key={contact.id} value={contact.id}>
+                      {contact.company ? `${contact.company} (${contact.name})` : contact.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
           </div>
 

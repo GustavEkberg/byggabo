@@ -14,6 +14,13 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { Contact } from '@/lib/services/db/schema';
 import { createQuotationAction } from '@/lib/core/quotation/create-quotation-action';
@@ -251,19 +258,19 @@ export function CreateQuotationDialog({ projectId, contacts }: Props) {
                 </div>
               </div>
             ) : (
-              <select
-                id="contact"
-                value={contactId}
-                onChange={e => setContactId(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="">No contractor selected</option>
-                {contacts.map(contact => (
-                  <option key={contact.id} value={contact.id}>
-                    {contact.company ? `${contact.company} (${contact.name})` : contact.name}
-                  </option>
-                ))}
-              </select>
+              <Select value={contactId} onValueChange={value => setContactId(value ?? '')}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="No contractor selected" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No contractor selected</SelectItem>
+                  {contacts.map(contact => (
+                    <SelectItem key={contact.id} value={contact.id}>
+                      {contact.company ? `${contact.company} (${contact.name})` : contact.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
           </div>
 

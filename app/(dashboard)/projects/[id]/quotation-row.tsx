@@ -7,6 +7,13 @@ import { updateQuotationAction } from '@/lib/core/quotation/update-quotation-act
 import { convertToInvoiceAction } from '@/lib/core/invoice/convert-to-invoice-action';
 import { EditQuotationDialog } from './edit-quotation-dialog';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 
 type QuotationWithContact = {
   id: string;
@@ -116,21 +123,27 @@ export function QuotationRow({ quotation, contacts, hasInvoice }: Props) {
       </div>
 
       <div className="flex items-center gap-2">
-        <select
+        <Select
           value={quotation.status}
-          onChange={e => {
-            const value = e.target.value;
+          onValueChange={value => {
             if (value === 'PENDING' || value === 'ACCEPTED' || value === 'REJECTED') {
               handleStatusChange(value);
             }
           }}
           disabled={updating}
-          className={`text-xs px-2 py-1 rounded-full border-0 cursor-pointer ${statusColors[quotation.status]}`}
         >
-          <option value="PENDING">Pending</option>
-          <option value="ACCEPTED">Accepted</option>
-          <option value="REJECTED">Rejected</option>
-        </select>
+          <SelectTrigger
+            size="sm"
+            className={`text-xs h-7 w-auto gap-1 rounded-full border-0 ${statusColors[quotation.status]}`}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="PENDING">Pending</SelectItem>
+            <SelectItem value="ACCEPTED">Accepted</SelectItem>
+            <SelectItem value="REJECTED">Rejected</SelectItem>
+          </SelectContent>
+        </Select>
 
         {quotation.status === 'ACCEPTED' && !hasInvoice && (
           <Button

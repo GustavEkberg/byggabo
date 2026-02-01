@@ -14,6 +14,13 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { createInvoiceAction } from '@/lib/core/invoice/create-invoice-action';
 import { createContactAction } from '@/lib/core/contact/create-contact-action';
 import { getUploadUrlAction } from '@/lib/core/file/get-upload-url-action';
@@ -182,22 +189,23 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
         <form onSubmit={handleSubmit} className="grid gap-4">
           {acceptedQuotations.length > 0 && (
             <div className="grid gap-2">
-              <label htmlFor="create-quotation" className="text-sm font-medium">
-                Link to Quotation (optional)
-              </label>
-              <select
-                id="create-quotation"
+              <label className="text-sm font-medium">Link to Quotation (optional)</label>
+              <Select
                 value={quotationId ?? ''}
-                onChange={e => handleQuotationChange(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                onValueChange={value => handleQuotationChange(value ?? '')}
               >
-                <option value="">No quotation (standalone)</option>
-                {acceptedQuotations.map(q => (
-                  <option key={q.id} value={q.id}>
-                    {q.description} - {parseFloat(q.amount).toLocaleString('sv-SE')} kr
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="No quotation (standalone)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No quotation (standalone)</SelectItem>
+                  {acceptedQuotations.map(q => (
+                    <SelectItem key={q.id} value={q.id}>
+                      {q.description} - {parseFloat(q.amount).toLocaleString('sv-SE')} kr
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
           <div className="grid gap-2">
@@ -305,19 +313,19 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
                 </div>
               </div>
             ) : (
-              <select
-                id="create-contact"
-                value={contactId}
-                onChange={e => setContactId(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option value="">No contractor selected</option>
-                {contacts.map(contact => (
-                  <option key={contact.id} value={contact.id}>
-                    {contact.company ? `${contact.company} (${contact.name})` : contact.name}
-                  </option>
-                ))}
-              </select>
+              <Select value={contactId} onValueChange={value => setContactId(value ?? '')}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="No contractor selected" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No contractor selected</SelectItem>
+                  {contacts.map(contact => (
+                    <SelectItem key={contact.id} value={contact.id}>
+                      {contact.company ? `${contact.company} (${contact.name})` : contact.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
           </div>
 
