@@ -30,8 +30,7 @@ export const getProjects = (params: GetProjectsParams = {}) =>
   }).pipe(Effect.withSpan('Project.getAll'));
 
 export type ProjectWithSummary = schema.Project & {
-  estimated: number;
-  actual: number;
+  lastActivityAt: Date | null;
   quotationCount: number;
   costItemCount: number;
   invoiceCount: number;
@@ -59,23 +58,12 @@ export const getProjectsWithSummary = (params: GetProjectsParams = {}) =>
         sectionId: schema.project.sectionId,
         createdAt: schema.project.createdAt,
         updatedAt: schema.project.updatedAt,
-        // Estimated: sum of accepted quotations
-        estimated: sql<number>`COALESCE((
-          SELECT SUM(CAST(${schema.quotation.amount} AS DECIMAL))
-          FROM ${schema.quotation}
-          WHERE ${schema.quotation.projectId} = ${schema.project.id}
-          AND ${schema.quotation.status} = 'ACCEPTED'
-        ), 0)`,
-        // Actual: sum of cost items + invoices
-        actual: sql<number>`COALESCE((
-          SELECT SUM(CAST(${schema.costItem.amount} AS DECIMAL))
-          FROM ${schema.costItem}
-          WHERE ${schema.costItem.projectId} = ${schema.project.id}
-        ), 0) + COALESCE((
-          SELECT SUM(CAST(${schema.invoice.amount} AS DECIMAL))
-          FROM ${schema.invoice}
-          WHERE ${schema.invoice.projectId} = ${schema.project.id}
-        ), 0)`,
+        // Last activity: most recent log item
+        lastActivityAt: sql<string | null>`(
+          SELECT MAX("createdAt")
+          FROM "logItem"
+          WHERE "logItem"."projectId" = "project"."id"
+        )`,
         // Counts
         quotationCount: sql<number>`(
           SELECT COUNT(*)
@@ -101,8 +89,7 @@ export const getProjectsWithSummary = (params: GetProjectsParams = {}) =>
     return projects.map(
       (p): ProjectWithSummary => ({
         ...p,
-        estimated: Number(p.estimated),
-        actual: Number(p.actual),
+        lastActivityAt: p.lastActivityAt ? new Date(p.lastActivityAt) : null,
         quotationCount: Number(p.quotationCount),
         costItemCount: Number(p.costItemCount),
         invoiceCount: Number(p.invoiceCount)

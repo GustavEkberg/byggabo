@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { formatSEK } from '@/lib/utils';
 import { SectionIcon } from '@/components/ui/section-icon';
 import type { ProjectWithSummary } from '@/lib/core/project/queries';
 import type { PropertySection } from '@/lib/services/db/schema';
@@ -11,63 +10,48 @@ type Props = {
   sections: PropertySection[];
 };
 
+function formatRelativeTime(date: Date | string): string {
+  const now = new Date();
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  const diffMs = now.getTime() - dateObj.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHr / 24);
+
+  if (diffSec < 60) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  return dateObj.toLocaleDateString('sv-SE');
+}
+
 export function ProjectList({ projects, sections }: Props) {
   const sectionMap = new Map(sections.map(s => [s.id, s]));
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="flex flex-col gap-3">
       {projects.map(project => {
-        const hasEstimate = project.estimated > 0;
-        const isOverBudget = hasEstimate && project.actual > project.estimated;
-        const percentage = hasEstimate ? (project.actual / project.estimated) * 100 : 0;
-        const displayPercentage = Math.min(percentage, 100);
         const section = project.sectionId ? sectionMap.get(project.sectionId) : null;
 
         return (
           <Link
             key={project.id}
             href={`/projects/${project.id}`}
-            className="block rounded-xl border bg-card p-5 transition-all hover:border-foreground/20 hover:shadow-sm"
+            className="flex items-center gap-4 rounded-xl border bg-card px-5 py-4 transition-all hover:border-foreground/20 hover:shadow-sm"
           >
-            <div className="flex items-center gap-2">
-              {section && <SectionIcon icon={section.icon} color={section.color} size="sm" />}
-              <h2 className="font-medium">{project.name}</h2>
-            </div>
-            {project.description && (
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                {project.description}
-              </p>
-            )}
+            {section && <SectionIcon icon={section.icon} color={section.color} size="sm" />}
 
-            {/* Financial summary */}
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Budget</span>
-                <span className={isOverBudget ? 'font-medium text-red-500' : 'font-medium'}>
-                  {formatSEK(project.actual)}
-                  {hasEstimate && (
-                    <span className="text-muted-foreground font-normal">
-                      {' '}
-                      / {formatSEK(project.estimated)}
-                    </span>
-                  )}
-                </span>
-              </div>
-
-              {hasEstimate && (
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      isOverBudget ? 'bg-red-500' : 'bg-green-500'
-                    }`}
-                    style={{ width: `${displayPercentage}%` }}
-                  />
-                </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-medium truncate">{project.name}</h2>
+              {project.description && (
+                <p className="text-sm text-muted-foreground truncate">{project.description}</p>
               )}
             </div>
 
             {/* Activity counts */}
-            <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground">
               {project.quotationCount > 0 && (
                 <span>
                   {project.quotationCount} quotation{project.quotationCount !== 1 && 's'}
@@ -83,14 +67,12 @@ export function ProjectList({ projects, sections }: Props) {
                   {project.invoiceCount} invoice{project.invoiceCount !== 1 && 's'}
                 </span>
               )}
-              {project.quotationCount === 0 &&
-                project.costItemCount === 0 &&
-                project.invoiceCount === 0 && <span>No activity yet</span>}
             </div>
 
-            <p className="text-xs text-muted-foreground/60 mt-3 pt-3 border-t">
-              Created {project.createdAt.toLocaleDateString('sv-SE')}
-            </p>
+            {/* Last activity */}
+            <div className="text-sm text-muted-foreground shrink-0">
+              {project.lastActivityAt ? formatRelativeTime(project.lastActivityAt) : 'No activity'}
+            </div>
           </Link>
         );
       })}
