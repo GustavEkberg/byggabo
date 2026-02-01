@@ -15,11 +15,11 @@ const UpdateCostItemInput = S.Struct({
   name: S.String.pipe(S.minLength(1), S.maxLength(200)),
   description: S.optional(S.String.pipe(S.maxLength(2000))),
   amount: S.String.pipe(S.minLength(1)),
-  date: S.Date,
+  date: S.DateFromString,
   receiptFileUrl: S.optional(S.NullOr(S.String))
 });
 
-type UpdateCostItemInput = S.Schema.Type<typeof UpdateCostItemInput>;
+type UpdateCostItemInput = S.Schema.Encoded<typeof UpdateCostItemInput>;
 
 export const updateCostItemAction = async (input: UpdateCostItemInput) => {
   return await NextEffect.runPromise(

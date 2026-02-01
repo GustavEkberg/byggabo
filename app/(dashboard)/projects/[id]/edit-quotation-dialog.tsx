@@ -140,7 +140,7 @@ function EditQuotationForm({
       quotationId: quotation.id,
       description,
       amount,
-      receivedDate,
+      receivedDate: receivedDate.toISOString(),
       contactId: contactId || null,
       ...(fileUrl !== undefined ? { fileUrl } : {})
     });

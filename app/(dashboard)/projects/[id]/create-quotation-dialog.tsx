@@ -126,7 +126,7 @@ export function CreateQuotationDialog({ projectId, contacts }: Props) {
       projectId,
       description,
       amount,
-      receivedDate,
+      receivedDate: receivedDate.toISOString(),
       contactId: finalContactId,
       fileUrl
     });

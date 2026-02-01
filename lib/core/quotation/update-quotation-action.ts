@@ -16,11 +16,11 @@ const UpdateQuotationInput = S.Struct({
   description: S.optional(S.String.pipe(S.minLength(1), S.maxLength(2000))),
   amount: S.optional(S.String.pipe(S.minLength(1))),
   status: S.optional(S.Literal('PENDING', 'ACCEPTED', 'REJECTED')),
-  receivedDate: S.optional(S.Date),
+  receivedDate: S.optional(S.DateFromString),
   fileUrl: S.optional(S.NullOr(S.String))
 });
 
-type UpdateQuotationInput = S.Schema.Type<typeof UpdateQuotationInput>;
+type UpdateQuotationInput = S.Schema.Encoded<typeof UpdateQuotationInput>;
 
 export const updateQuotationAction = async (input: UpdateQuotationInput) => {
   return await NextEffect.runPromise(

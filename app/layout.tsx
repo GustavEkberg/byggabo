@@ -7,8 +7,8 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
-  title: 'Init',
-  description: 'Next.js starter with Effect-TS integration'
+  title: 'Byggabo',
+  description: 'Byggabo'
 };
 
 export default function RootLayout({

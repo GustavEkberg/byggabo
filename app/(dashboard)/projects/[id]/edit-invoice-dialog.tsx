@@ -134,7 +134,7 @@ export function EditInvoiceDialog({ invoice, contacts }: Props) {
       invoiceId: invoice.id,
       description,
       amount,
-      invoiceDate,
+      invoiceDate: invoiceDate.toISOString(),
       fileUrl: finalFileUrl,
       contactId: finalContactId
     });

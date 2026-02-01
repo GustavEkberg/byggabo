@@ -136,7 +136,7 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
       projectId,
       description,
       amount,
-      invoiceDate,
+      invoiceDate: invoiceDate.toISOString(),
       fileUrl,
       quotationId,
       contactId: finalContactId

@@ -14,13 +14,13 @@ const UpdateInvoiceInput = S.Struct({
   invoiceId: S.String.pipe(S.minLength(1)),
   description: S.optional(S.String.pipe(S.minLength(1), S.maxLength(2000))),
   amount: S.optional(S.String.pipe(S.minLength(1))),
-  invoiceDate: S.optional(S.Date),
+  invoiceDate: S.optional(S.DateFromString),
   isPaid: S.optional(S.Boolean),
   fileUrl: S.optional(S.NullOr(S.String)),
   contactId: S.optional(S.NullOr(S.String))
 });
 
-type UpdateInvoiceInput = S.Schema.Type<typeof UpdateInvoiceInput>;
+type UpdateInvoiceInput = S.Schema.Encoded<typeof UpdateInvoiceInput>;
 
 export const updateInvoiceAction = async (input: UpdateInvoiceInput) => {
   return await NextEffect.runPromise(

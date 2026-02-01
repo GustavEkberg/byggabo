@@ -16,11 +16,11 @@ const CreateQuotationInput = S.Struct({
   description: S.String.pipe(S.minLength(1), S.maxLength(2000)),
   amount: S.String.pipe(S.minLength(1)), // Decimal as string
   status: S.optional(S.Literal('PENDING', 'ACCEPTED', 'REJECTED')),
-  receivedDate: S.Date,
+  receivedDate: S.DateFromString,
   fileUrl: S.optional(S.String)
 });
 
-type CreateQuotationInput = S.Schema.Type<typeof CreateQuotationInput>;
+type CreateQuotationInput = S.Schema.Encoded<typeof CreateQuotationInput>;
 
 export const createQuotationAction = async (input: CreateQuotationInput) => {
   return await NextEffect.runPromise(

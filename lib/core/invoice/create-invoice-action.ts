@@ -14,13 +14,13 @@ const CreateInvoiceInput = S.Struct({
   projectId: S.String.pipe(S.minLength(1)),
   description: S.String.pipe(S.minLength(1), S.maxLength(2000)),
   amount: S.String.pipe(S.minLength(1)),
-  invoiceDate: S.optional(S.Date),
+  invoiceDate: S.optional(S.DateFromString),
   fileUrl: S.optional(S.NullOr(S.String)),
   quotationId: S.optional(S.NullOr(S.String)),
   contactId: S.optional(S.NullOr(S.String))
 });
 
-type CreateInvoiceInput = S.Schema.Type<typeof CreateInvoiceInput>;
+type CreateInvoiceInput = S.Schema.Encoded<typeof CreateInvoiceInput>;
 
 export const createInvoiceAction = async (input: CreateInvoiceInput) => {
   return await NextEffect.runPromise(

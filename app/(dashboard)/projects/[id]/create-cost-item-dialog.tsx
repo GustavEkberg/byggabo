@@ -85,7 +85,7 @@ export function CreateCostItemDialog({ projectId }: Props) {
       name,
       description: description || undefined,
       amount,
-      date,
+      date: date.toISOString(),
       receiptFileUrl
     });
 

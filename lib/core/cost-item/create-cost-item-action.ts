@@ -15,11 +15,11 @@ const CreateCostItemInput = S.Struct({
   name: S.String.pipe(S.minLength(1), S.maxLength(200)),
   description: S.optional(S.String.pipe(S.maxLength(2000))),
   amount: S.String.pipe(S.minLength(1)), // Decimal as string
-  date: S.Date,
+  date: S.DateFromString,
   receiptFileUrl: S.optional(S.String)
 });
 
-type CreateCostItemInput = S.Schema.Type<typeof CreateCostItemInput>;
+type CreateCostItemInput = S.Schema.Encoded<typeof CreateCostItemInput>;
 
 export const createCostItemAction = async (input: CreateCostItemInput) => {
   return await NextEffect.runPromise(
