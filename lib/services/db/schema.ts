@@ -31,6 +31,7 @@ export const propertySection = pgTable('propertySection', {
     .notNull()
     .references(() => property.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
+  icon: text('icon').notNull(), // lucide icon name e.g. 'cooking-pot'
   color: text('color').notNull(), // hex color e.g. #3b82f6
   sortOrder: text('sortOrder').notNull().default('0'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),

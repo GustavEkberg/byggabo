@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SectionIcon } from '@/components/ui/section-icon';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,7 +46,7 @@ function SectionRow({ section }: { section: PropertySection }) {
   return (
     <div className="flex items-center justify-between gap-3 p-3 bg-muted/50 rounded-lg">
       <div className="flex items-center gap-3">
-        <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: section.color }} />
+        <SectionIcon icon={section.icon} color={section.color} size="md" />
         <span className="font-medium">{section.name}</span>
       </div>
       <div className="flex items-center gap-1">

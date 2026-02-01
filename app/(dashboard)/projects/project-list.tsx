@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { formatSEK } from '@/lib/utils';
+import { SectionIcon } from '@/components/ui/section-icon';
 import type { ProjectWithSummary } from '@/lib/core/project/queries';
 import type { PropertySection } from '@/lib/services/db/schema';
 
@@ -29,13 +30,7 @@ export function ProjectList({ projects, sections }: Props) {
             className="block rounded-xl border bg-card p-5 transition-all hover:border-foreground/20 hover:shadow-sm"
           >
             <div className="flex items-center gap-2">
-              {section && (
-                <span
-                  className="w-3 h-3 rounded-full shrink-0"
-                  style={{ backgroundColor: section.color }}
-                  title={section.name}
-                />
-              )}
+              {section && <SectionIcon icon={section.icon} color={section.color} size="sm" />}
               <h2 className="font-medium">{project.name}</h2>
             </div>
             {project.description && (

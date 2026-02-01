@@ -20,16 +20,3 @@ export const getSections = () =>
 
     return sections;
   }).pipe(Effect.withSpan('PropertySection.getAll'));
-
-/**
- * Default sections to seed for new properties.
- */
-export const DEFAULT_SECTIONS = [
-  { name: 'Kitchen', color: '#ef4444', sortOrder: '0' },
-  { name: 'Bathroom', color: '#3b82f6', sortOrder: '1' },
-  { name: 'Living Room', color: '#22c55e', sortOrder: '2' },
-  { name: 'Bedroom', color: '#a855f7', sortOrder: '3' },
-  { name: 'Garden', color: '#84cc16', sortOrder: '4' },
-  { name: 'Garage', color: '#6b7280', sortOrder: '5' },
-  { name: 'Other', color: '#f59e0b', sortOrder: '6' }
-] as const;

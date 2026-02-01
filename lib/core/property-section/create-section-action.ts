@@ -12,6 +12,7 @@ import { ValidationError } from '@/lib/core/errors';
 
 const CreateSectionInput = S.Struct({
   name: S.String.pipe(S.minLength(1), S.maxLength(50)),
+  icon: S.String.pipe(S.minLength(1), S.maxLength(50)),
   color: S.String.pipe(S.pattern(/^#[0-9a-fA-F]{6}$/))
 });
 
@@ -53,6 +54,7 @@ export const createSectionAction = async (input: CreateSectionInput) => {
         .values({
           propertyId,
           name: parsed.name,
+          icon: parsed.icon,
           color: parsed.color,
           sortOrder: nextSortOrder
         })

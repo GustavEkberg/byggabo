@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { SectionIcon } from '@/components/ui/section-icon';
 import { createProjectAction } from '@/lib/core/project/create-project-action';
 import type { PropertySection } from '@/lib/services/db/schema';
 
@@ -104,11 +105,10 @@ export function CreateProjectDialog({ sections }: Props) {
                 <SelectTrigger className="w-full">
                   {sectionId ? (
                     <span className="flex items-center gap-2">
-                      <span
-                        className="w-3 h-3 rounded-full shrink-0"
-                        style={{
-                          backgroundColor: sections.find(s => s.id === sectionId)?.color
-                        }}
+                      <SectionIcon
+                        icon={sections.find(s => s.id === sectionId)?.icon ?? 'box'}
+                        color={sections.find(s => s.id === sectionId)?.color ?? '#6b7280'}
+                        size="sm"
                       />
                       {sections.find(s => s.id === sectionId)?.name}
                     </span>
@@ -119,10 +119,7 @@ export function CreateProjectDialog({ sections }: Props) {
                 <SelectContent>
                   {sections.map(section => (
                     <SelectItem key={section.id} value={section.id}>
-                      <span
-                        className="w-3 h-3 rounded-full shrink-0"
-                        style={{ backgroundColor: section.color }}
-                      />
+                      <SectionIcon icon={section.icon} color={section.color} size="sm" />
                       {section.name}
                     </SelectItem>
                   ))}

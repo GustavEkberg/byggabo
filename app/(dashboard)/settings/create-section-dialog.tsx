@@ -15,7 +15,9 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { SectionIcon, iconMap } from '@/components/ui/section-icon';
 import { createSectionAction } from '@/lib/core/property-section/create-section-action';
+import { SECTION_ICONS } from '@/lib/core/property-section/constants';
 
 const PRESET_COLORS = [
   '#ef4444', // red
@@ -37,6 +39,7 @@ export function CreateSectionDialog() {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [name, setName] = useState('');
+  const [icon, setIcon] = useState<string>('box');
   const [color, setColor] = useState('#3b82f6');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,6 +48,7 @@ export function CreateSectionDialog() {
 
     const result = await createSectionAction({
       name,
+      icon,
       color
     });
 
@@ -58,6 +62,7 @@ export function CreateSectionDialog() {
     toast.success('Section created');
     setOpen(false);
     setName('');
+    setIcon('box');
     setColor('#3b82f6');
   };
 
@@ -85,6 +90,30 @@ export function CreateSectionDialog() {
               required
               maxLength={50}
             />
+          </div>
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">Icon</label>
+            <div className="flex flex-wrap gap-1">
+              {SECTION_ICONS.map(iconName => {
+                const IconComponent = iconMap[iconName];
+                return (
+                  <button
+                    key={iconName}
+                    type="button"
+                    onClick={() => setIcon(iconName)}
+                    className="w-8 h-8 rounded flex items-center justify-center transition-transform hover:scale-110"
+                    style={{
+                      backgroundColor: icon === iconName ? 'var(--accent)' : 'transparent'
+                    }}
+                  >
+                    <IconComponent className="w-4 h-4" />
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <SectionIcon icon={icon} color={color} size="lg" />
+            </div>
           </div>
           <div className="grid gap-2">
             <label className="text-sm font-medium">Color</label>

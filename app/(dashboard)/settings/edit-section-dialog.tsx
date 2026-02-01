@@ -13,7 +13,9 @@ import {
   DialogTitle
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { SectionIcon, iconMap } from '@/components/ui/section-icon';
 import { updateSectionAction } from '@/lib/core/property-section/update-section-action';
+import { SECTION_ICONS } from '@/lib/core/property-section/constants';
 import type { PropertySection } from '@/lib/services/db/schema';
 
 const PRESET_COLORS = [
@@ -41,6 +43,7 @@ type Props = {
 function EditSectionForm({ section, onClose }: { section: PropertySection; onClose: () => void }) {
   const [pending, setPending] = useState(false);
   const [name, setName] = useState(section.name);
+  const [icon, setIcon] = useState(section.icon);
   const [color, setColor] = useState(section.color);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,6 +53,7 @@ function EditSectionForm({ section, onClose }: { section: PropertySection; onClo
     const result = await updateSectionAction({
       id: section.id,
       name,
+      icon,
       color
     });
 
@@ -78,6 +82,30 @@ function EditSectionForm({ section, onClose }: { section: PropertySection; onClo
           required
           maxLength={50}
         />
+      </div>
+      <div className="grid gap-2">
+        <label className="text-sm font-medium">Icon</label>
+        <div className="flex flex-wrap gap-1">
+          {SECTION_ICONS.map(iconName => {
+            const IconComponent = iconMap[iconName];
+            return (
+              <button
+                key={iconName}
+                type="button"
+                onClick={() => setIcon(iconName)}
+                className="w-8 h-8 rounded flex items-center justify-center transition-transform hover:scale-110"
+                style={{
+                  backgroundColor: icon === iconName ? 'var(--accent)' : 'transparent'
+                }}
+              >
+                <IconComponent className="w-4 h-4" />
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-2 mt-1">
+          <SectionIcon icon={icon} color={color} size="lg" />
+        </div>
       </div>
       <div className="grid gap-2">
         <label className="text-sm font-medium">Color</label>
@@ -124,7 +152,7 @@ export function EditSectionDialog({ section, open, onOpenChange }: Props) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Section</DialogTitle>
-          <DialogDescription>Update section name and color.</DialogDescription>
+          <DialogDescription>Update section name, icon, and color.</DialogDescription>
         </DialogHeader>
         {open && <EditSectionForm section={section} onClose={() => onOpenChange(false)} />}
       </DialogContent>

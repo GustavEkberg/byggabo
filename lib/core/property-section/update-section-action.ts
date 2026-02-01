@@ -13,6 +13,7 @@ import { ValidationError, NotFoundError } from '@/lib/core/errors';
 const UpdateSectionInput = S.Struct({
   id: S.String.pipe(S.minLength(1)),
   name: S.String.pipe(S.minLength(1), S.maxLength(50)),
+  icon: S.String.pipe(S.minLength(1), S.maxLength(50)),
   color: S.String.pipe(S.pattern(/^#[0-9a-fA-F]{6}$/))
 });
 
@@ -58,6 +59,7 @@ export const updateSectionAction = async (input: UpdateSectionInput) => {
         .update(schema.propertySection)
         .set({
           name: parsed.name,
+          icon: parsed.icon,
           color: parsed.color
         })
         .where(eq(schema.propertySection.id, parsed.id))

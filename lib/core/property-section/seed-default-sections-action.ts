@@ -8,7 +8,7 @@ import { NextEffect } from '@/lib/next-effect';
 import { getSessionWithProperty } from '@/lib/services/auth/get-session';
 import { Db } from '@/lib/services/db/live-layer';
 import * as schema from '@/lib/services/db/schema';
-import { DEFAULT_SECTIONS } from './queries';
+import { DEFAULT_SECTIONS } from './constants';
 
 /**
  * Seeds default sections for the current property if none exist.
@@ -43,6 +43,7 @@ export const seedDefaultSectionsAction = async () => {
           DEFAULT_SECTIONS.map(section => ({
             propertyId,
             name: section.name,
+            icon: section.icon,
             color: section.color,
             sortOrder: section.sortOrder
           }))

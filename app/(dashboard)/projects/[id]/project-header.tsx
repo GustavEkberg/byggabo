@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { SectionIcon } from '@/components/ui/section-icon';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,13 +48,7 @@ export function ProjectHeader({ project, sections }: Props) {
     <div className="flex items-start justify-between gap-4">
       <div>
         <div className="flex items-center gap-2">
-          {section && (
-            <span
-              className="w-4 h-4 rounded-full shrink-0"
-              style={{ backgroundColor: section.color }}
-              title={section.name}
-            />
-          )}
+          {section && <SectionIcon icon={section.icon} color={section.color} size="md" />}
           <h1 className="text-2xl font-semibold">{project.name}</h1>
         </div>
         {section && <p className="text-sm text-muted-foreground mt-1">{section.name}</p>}
