@@ -14,6 +14,7 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Select,
   SelectContent,
@@ -94,9 +95,7 @@ function EditQuotationForm({
   const [pending, setPending] = useState(false);
   const [description, setDescription] = useState(quotation.description);
   const [amount, setAmount] = useState(quotation.amount);
-  const [receivedDate, setReceivedDate] = useState(
-    quotation.receivedDate.toISOString().split('T')[0]
-  );
+  const [receivedDate, setReceivedDate] = useState<Date>(quotation.receivedDate);
   const [contactId, setContactId] = useState<string>(quotation.contactId ?? '');
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -141,7 +140,7 @@ function EditQuotationForm({
       quotationId: quotation.id,
       description,
       amount,
-      receivedDate: new Date(receivedDate),
+      receivedDate,
       contactId: contactId || null,
       ...(fileUrl !== undefined ? { fileUrl } : {})
     });
@@ -195,15 +194,10 @@ function EditQuotationForm({
             />
           </div>
           <div className="grid gap-2">
-            <label htmlFor="edit-receivedDate" className="text-sm font-medium">
-              Received Date
-            </label>
-            <Input
-              id="edit-receivedDate"
-              type="date"
+            <label className="text-sm font-medium">Received Date</label>
+            <DatePicker
               value={receivedDate}
-              onChange={e => setReceivedDate(e.target.value)}
-              required
+              onChange={date => setReceivedDate(date ?? quotation.receivedDate)}
             />
           </div>
         </div>

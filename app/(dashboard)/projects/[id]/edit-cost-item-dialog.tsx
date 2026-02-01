@@ -14,6 +14,7 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 import type { CostItem } from '@/lib/services/db/schema';
 import { updateCostItemAction } from '@/lib/core/cost-item/update-cost-item-action';
@@ -29,7 +30,7 @@ export function EditCostItemDialog({ costItem }: Props) {
   const [name, setName] = useState(costItem.name);
   const [description, setDescription] = useState(costItem.description ?? '');
   const [amount, setAmount] = useState(costItem.amount);
-  const [date, setDate] = useState(costItem.date.toISOString().split('T')[0]);
+  const [date, setDate] = useState<Date>(costItem.date);
   const [receiptUrl, setReceiptUrl] = useState(costItem.receiptFileUrl);
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -75,7 +76,7 @@ export function EditCostItemDialog({ costItem }: Props) {
       name,
       description: description || undefined,
       amount,
-      date: new Date(date),
+      date,
       receiptFileUrl: finalReceiptUrl
     });
 
@@ -162,16 +163,8 @@ export function EditCostItemDialog({ costItem }: Props) {
               />
             </div>
             <div className="grid gap-2">
-              <label htmlFor="edit-date" className="text-sm font-medium">
-                Date
-              </label>
-              <Input
-                id="edit-date"
-                type="date"
-                value={date}
-                onChange={e => setDate(e.target.value)}
-                required
-              />
+              <label className="text-sm font-medium">Date</label>
+              <DatePicker value={date} onChange={d => setDate(d ?? costItem.date)} />
             </div>
           </div>
           <div className="grid gap-2">

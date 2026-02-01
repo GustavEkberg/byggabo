@@ -14,6 +14,7 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 import { createCostItemAction } from '@/lib/core/cost-item/create-cost-item-action';
 import { getUploadUrlAction } from '@/lib/core/file/get-upload-url-action';
@@ -28,7 +29,7 @@ export function CreateCostItemDialog({ projectId }: Props) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState<Date>(new Date());
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -36,7 +37,7 @@ export function CreateCostItemDialog({ projectId }: Props) {
     setName('');
     setDescription('');
     setAmount('');
-    setDate(new Date().toISOString().split('T')[0]);
+    setDate(new Date());
     setFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -84,7 +85,7 @@ export function CreateCostItemDialog({ projectId }: Props) {
       name,
       description: description || undefined,
       amount,
-      date: new Date(date),
+      date,
       receiptFileUrl
     });
 
@@ -151,16 +152,8 @@ export function CreateCostItemDialog({ projectId }: Props) {
               />
             </div>
             <div className="grid gap-2">
-              <label htmlFor="date" className="text-sm font-medium">
-                Date
-              </label>
-              <Input
-                id="date"
-                type="date"
-                value={date}
-                onChange={e => setDate(e.target.value)}
-                required
-              />
+              <label className="text-sm font-medium">Date</label>
+              <DatePicker value={date} onChange={d => setDate(d ?? new Date())} />
             </div>
           </div>
           <div className="grid gap-2">

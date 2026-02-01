@@ -14,6 +14,7 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Select,
   SelectContent,
@@ -44,7 +45,7 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
   const [pending, setPending] = useState(false);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
-  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [invoiceDate, setInvoiceDate] = useState<Date>(new Date());
   const [quotationId, setQuotationId] = useState<string | null>(null);
   const [contactId, setContactId] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
@@ -135,7 +136,7 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
       projectId,
       description,
       amount,
-      invoiceDate: new Date(invoiceDate),
+      invoiceDate,
       fileUrl,
       quotationId,
       contactId: finalContactId
@@ -156,7 +157,7 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
   const resetForm = () => {
     setDescription('');
     setAmount('');
-    setInvoiceDate(new Date().toISOString().split('T')[0]);
+    setInvoiceDate(new Date());
     setQuotationId(null);
     setContactId('');
     setFile(null);
@@ -238,15 +239,10 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
               />
             </div>
             <div className="grid gap-2">
-              <label htmlFor="create-invoice-date" className="text-sm font-medium">
-                Invoice Date
-              </label>
-              <Input
-                id="create-invoice-date"
-                type="date"
+              <label className="text-sm font-medium">Invoice Date</label>
+              <DatePicker
                 value={invoiceDate}
-                onChange={e => setInvoiceDate(e.target.value)}
-                required
+                onChange={date => setInvoiceDate(date ?? new Date())}
               />
             </div>
           </div>

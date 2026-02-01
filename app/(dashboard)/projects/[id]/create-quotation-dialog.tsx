@@ -14,6 +14,7 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Select,
   SelectContent,
@@ -37,7 +38,7 @@ export function CreateQuotationDialog({ projectId, contacts }: Props) {
   const [pending, setPending] = useState(false);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
-  const [receivedDate, setReceivedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [receivedDate, setReceivedDate] = useState<Date>(new Date());
   const [contactId, setContactId] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -52,7 +53,7 @@ export function CreateQuotationDialog({ projectId, contacts }: Props) {
   const resetForm = () => {
     setDescription('');
     setAmount('');
-    setReceivedDate(new Date().toISOString().split('T')[0]);
+    setReceivedDate(new Date());
     setContactId('');
     setFile(null);
     setShowNewContact(false);
@@ -125,7 +126,7 @@ export function CreateQuotationDialog({ projectId, contacts }: Props) {
       projectId,
       description,
       amount,
-      receivedDate: new Date(receivedDate),
+      receivedDate,
       contactId: finalContactId,
       fileUrl
     });
@@ -182,15 +183,10 @@ export function CreateQuotationDialog({ projectId, contacts }: Props) {
               />
             </div>
             <div className="grid gap-2">
-              <label htmlFor="receivedDate" className="text-sm font-medium">
-                Received Date
-              </label>
-              <Input
-                id="receivedDate"
-                type="date"
+              <label className="text-sm font-medium">Received Date</label>
+              <DatePicker
                 value={receivedDate}
-                onChange={e => setReceivedDate(e.target.value)}
-                required
+                onChange={date => setReceivedDate(date ?? new Date())}
               />
             </div>
           </div>

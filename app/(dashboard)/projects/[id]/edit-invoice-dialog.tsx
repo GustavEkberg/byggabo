@@ -14,6 +14,7 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Select,
   SelectContent,
@@ -60,7 +61,7 @@ export function EditInvoiceDialog({ invoice, contacts }: Props) {
   const [pending, setPending] = useState(false);
   const [description, setDescription] = useState(invoice.description);
   const [amount, setAmount] = useState(invoice.amount);
-  const [invoiceDate, setInvoiceDate] = useState(invoice.invoiceDate.toISOString().split('T')[0]);
+  const [invoiceDate, setInvoiceDate] = useState<Date>(invoice.invoiceDate);
   const [contactId, setContactId] = useState<string>(invoice.contactId ?? '');
   const [fileUrl, setFileUrl] = useState(invoice.fileUrl);
   const [file, setFile] = useState<File | null>(null);
@@ -133,7 +134,7 @@ export function EditInvoiceDialog({ invoice, contacts }: Props) {
       invoiceId: invoice.id,
       description,
       amount,
-      invoiceDate: new Date(invoiceDate),
+      invoiceDate,
       fileUrl: finalFileUrl,
       contactId: finalContactId
     });
@@ -210,15 +211,10 @@ export function EditInvoiceDialog({ invoice, contacts }: Props) {
               />
             </div>
             <div className="grid gap-2">
-              <label htmlFor="edit-invoice-date" className="text-sm font-medium">
-                Invoice Date
-              </label>
-              <Input
-                id="edit-invoice-date"
-                type="date"
+              <label className="text-sm font-medium">Invoice Date</label>
+              <DatePicker
                 value={invoiceDate}
-                onChange={e => setInvoiceDate(e.target.value)}
-                required
+                onChange={date => setInvoiceDate(date ?? invoice.invoiceDate)}
               />
             </div>
           </div>
