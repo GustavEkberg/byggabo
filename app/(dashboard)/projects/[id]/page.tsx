@@ -65,7 +65,12 @@ async function Content({ projectId }: { projectId: string }) {
                 contacts={contacts}
               />
             </div>
-            <Timeline projectId={projectId} logItems={logItems} currentUserId={user.id} />
+            <Timeline
+              projectId={projectId}
+              logItems={logItems}
+              currentUserId={user.id}
+              contacts={contacts}
+            />
           </div>
         </div>
       );

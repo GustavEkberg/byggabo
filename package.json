@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "build:vercel": "drizzle-kit push && next build",
+    "vercel-build": "drizzle-kit push && next build",
     "start": "next start",
     "tsc": "tsc --noEmit",
     "lint": "eslint .",

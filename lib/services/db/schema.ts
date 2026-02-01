@@ -264,6 +264,24 @@ export type LogItem = typeof logItem.$inferSelect;
 export type InsertLogItem = typeof logItem.$inferInsert;
 
 ////////////////////////////////////////////////////////////////////////
+// LOG ITEM MENTION - Track @mentions of contacts in comments
+////////////////////////////////////////////////////////////////////////
+export const logItemMention = pgTable('logItemMention', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  logItemId: text('logItemId')
+    .notNull()
+    .references(() => logItem.id, { onDelete: 'cascade' }),
+  contactId: text('contactId')
+    .notNull()
+    .references(() => contact.id, { onDelete: 'cascade' })
+});
+
+export type LogItemMention = typeof logItemMention.$inferSelect;
+export type InsertLogItemMention = typeof logItemMention.$inferInsert;
+
+////////////////////////////////////////////////////////////////////////
 // PROPERTY INVITE - Invite new users to join a property
 ////////////////////////////////////////////////////////////////////////
 export const propertyInvite = pgTable('propertyInvite', {

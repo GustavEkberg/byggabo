@@ -5,6 +5,15 @@ import * as schema from '@/lib/services/db/schema';
 import { eq, and, desc, inArray } from 'drizzle-orm';
 import { NotFoundError } from '@/lib/core/errors';
 
+/** Mention in a log item */
+export type LogItemMentionInfo = {
+  contactId: string;
+  contactName: string;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  contactCompany: string | null;
+};
+
 /** Log item with creator info */
 export type LogItemWithUser = {
   id: string;
@@ -14,6 +23,7 @@ export type LogItemWithUser = {
   description: string;
   createdAt: Date;
   createdBy: { id: string; name: string } | null;
+  mentions: LogItemMentionInfo[];
 };
 
 /** Log item with project and creator info (for dashboard) */
@@ -61,6 +71,38 @@ export const getLogItems = (projectId: string) =>
       .where(eq(schema.logItem.projectId, projectId))
       .orderBy(desc(schema.logItem.createdAt));
 
+    // Fetch mentions for all log items
+    const logItemIds = rows.map(r => r.id);
+    const mentionRows =
+      logItemIds.length > 0
+        ? yield* db
+            .select({
+              logItemId: schema.logItemMention.logItemId,
+              contactId: schema.logItemMention.contactId,
+              contactName: schema.contact.name,
+              contactEmail: schema.contact.email,
+              contactPhone: schema.contact.phone,
+              contactCompany: schema.contact.company
+            })
+            .from(schema.logItemMention)
+            .innerJoin(schema.contact, eq(schema.logItemMention.contactId, schema.contact.id))
+            .where(inArray(schema.logItemMention.logItemId, logItemIds))
+        : [];
+
+    // Group mentions by log item
+    const mentionsByLogItem = new Map<string, LogItemMentionInfo[]>();
+    for (const m of mentionRows) {
+      const existing = mentionsByLogItem.get(m.logItemId) ?? [];
+      existing.push({
+        contactId: m.contactId,
+        contactName: m.contactName,
+        contactEmail: m.contactEmail,
+        contactPhone: m.contactPhone,
+        contactCompany: m.contactCompany
+      });
+      mentionsByLogItem.set(m.logItemId, existing);
+    }
+
     const logItems: LogItemWithUser[] = rows.map(row => ({
       id: row.id,
       projectId: row.projectId,
@@ -68,7 +110,8 @@ export const getLogItems = (projectId: string) =>
       referenceId: row.referenceId,
       description: row.description,
       createdAt: row.createdAt,
-      createdBy: row.createdById ? { id: row.createdById, name: row.userName ?? 'Unknown' } : null
+      createdBy: row.createdById ? { id: row.createdById, name: row.userName ?? 'Unknown' } : null,
+      mentions: mentionsByLogItem.get(row.id) ?? []
     }));
 
     return logItems;
@@ -113,6 +156,38 @@ export const getRecentLogItems = (limit = 20) =>
       .orderBy(desc(schema.logItem.createdAt))
       .limit(limit);
 
+    // Fetch mentions for all log items
+    const logItemIds = rows.map(r => r.id);
+    const mentionRows =
+      logItemIds.length > 0
+        ? yield* db
+            .select({
+              logItemId: schema.logItemMention.logItemId,
+              contactId: schema.logItemMention.contactId,
+              contactName: schema.contact.name,
+              contactEmail: schema.contact.email,
+              contactPhone: schema.contact.phone,
+              contactCompany: schema.contact.company
+            })
+            .from(schema.logItemMention)
+            .innerJoin(schema.contact, eq(schema.logItemMention.contactId, schema.contact.id))
+            .where(inArray(schema.logItemMention.logItemId, logItemIds))
+        : [];
+
+    // Group mentions by log item
+    const mentionsByLogItem = new Map<string, LogItemMentionInfo[]>();
+    for (const m of mentionRows) {
+      const existing = mentionsByLogItem.get(m.logItemId) ?? [];
+      existing.push({
+        contactId: m.contactId,
+        contactName: m.contactName,
+        contactEmail: m.contactEmail,
+        contactPhone: m.contactPhone,
+        contactCompany: m.contactCompany
+      });
+      mentionsByLogItem.set(m.logItemId, existing);
+    }
+
     const logItems: LogItemWithProjectAndUser[] = rows.map(row => {
       const project = projectMap.get(row.projectId);
       return {
@@ -125,6 +200,7 @@ export const getRecentLogItems = (limit = 20) =>
         createdBy: row.createdById
           ? { id: row.createdById, name: row.userName ?? 'Unknown' }
           : null,
+        mentions: mentionsByLogItem.get(row.id) ?? [],
         project: { id: row.projectId, name: project?.name ?? 'Unknown' }
       };
     });

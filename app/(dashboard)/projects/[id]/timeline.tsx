@@ -1,18 +1,97 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import type { LogItemWithUser } from '@/lib/core/log-item/queries';
+import type { LogItemWithUser, LogItemMentionInfo } from '@/lib/core/log-item/queries';
+import type { Contact } from '@/lib/services/db/schema';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { MentionInput } from '@/components/ui/mention-input';
+import { ContactHoverCard } from '@/components/ui/contact-hover-card';
 import { addCommentAction } from '@/lib/core/log-item/add-comment-action';
 import { updateLogItemAction } from '@/lib/core/log-item/update-log-item-action';
+
+type ContactSuggestion = Pick<Contact, 'id' | 'name' | 'company'>;
+
+/** Render description with @mentions as hover cards */
+function renderDescriptionWithMentions(
+  description: string,
+  mentions: LogItemMentionInfo[]
+): React.ReactNode {
+  if (mentions.length === 0) {
+    return description;
+  }
+
+  // Find all @Name occurrences using known contact names
+  type Match = { index: number; length: number; mention: LogItemMentionInfo };
+  const matches: Match[] = [];
+
+  for (const mention of mentions) {
+    const searchStr = `@${mention.contactName}`;
+    let pos = 0;
+    while ((pos = description.indexOf(searchStr, pos)) !== -1) {
+      matches.push({
+        index: pos,
+        length: searchStr.length,
+        mention
+      });
+      pos += searchStr.length;
+    }
+  }
+
+  if (matches.length === 0) {
+    return description;
+  }
+
+  // Sort by position
+  matches.sort((a, b) => a.index - b.index);
+
+  // Build parts
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+
+  for (const match of matches) {
+    // Skip overlapping matches
+    if (match.index < lastIndex) continue;
+
+    // Add text before the mention
+    if (match.index > lastIndex) {
+      parts.push(description.slice(lastIndex, match.index));
+    }
+
+    const m = match.mention;
+
+    parts.push(
+      <ContactHoverCard
+        key={`${m.contactId}-${match.index}`}
+        contact={{
+          name: m.contactName,
+          email: m.contactEmail,
+          phone: m.contactPhone,
+          company: m.contactCompany
+        }}
+      >
+        @{m.contactName}
+      </ContactHoverCard>
+    );
+
+    lastIndex = match.index + match.length;
+  }
+
+  // Add remaining text
+  if (lastIndex < description.length) {
+    parts.push(description.slice(lastIndex));
+  }
+
+  return parts;
+}
 
 type Props = {
   projectId: string;
   logItems: LogItemWithUser[];
   currentUserId: string;
+  contacts: ContactSuggestion[];
 };
 
 const LOG_TYPES = ['COST_ITEM', 'QUOTATION', 'INVOICE', 'COMMENT'] as const;
@@ -109,16 +188,27 @@ function isLogType(value: string): value is LogType {
   );
 }
 
-export function Timeline({ projectId, logItems, currentUserId }: Props) {
+export function Timeline({ projectId, logItems, currentUserId, contacts }: Props) {
   const [filter, setFilter] = useState<LogType | 'ALL'>('ALL');
   const [showAddComment, setShowAddComment] = useState(false);
   const [comment, setComment] = useState('');
+  const [mentionedContactIds, setMentionedContactIds] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState('');
   const [editDate, setEditDate] = useState('');
 
   const filteredItems = filter === 'ALL' ? logItems : logItems.filter(item => item.type === filter);
+
+  const contactSuggestions = contacts.map(c => ({
+    id: c.id,
+    name: c.name,
+    subtitle: c.company ?? undefined
+  }));
+
+  const handleMentionsChange = useCallback((ids: string[]) => {
+    setMentionedContactIds(ids);
+  }, []);
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,7 +217,8 @@ export function Timeline({ projectId, logItems, currentUserId }: Props) {
     setPending(true);
     const result = await addCommentAction({
       projectId,
-      description: comment.trim()
+      description: comment.trim(),
+      mentionedContactIds: mentionedContactIds.length > 0 ? mentionedContactIds : undefined
     });
     setPending(false);
 
@@ -138,6 +229,7 @@ export function Timeline({ projectId, logItems, currentUserId }: Props) {
 
     toast.success('Comment added');
     setComment('');
+    setMentionedContactIds([]);
     setShowAddComment(false);
   };
 
@@ -194,10 +286,12 @@ export function Timeline({ projectId, logItems, currentUserId }: Props) {
 
         {showAddComment && (
           <form onSubmit={handleAddComment} className="mt-4 space-y-2">
-            <Textarea
+            <MentionInput
               value={comment}
-              onChange={e => setComment(e.target.value)}
-              placeholder="Add a note or comment..."
+              onChange={setComment}
+              onMentionsChange={handleMentionsChange}
+              suggestions={contactSuggestions}
+              placeholder="Add a note or comment... Use @ to mention contacts"
               maxLength={2000}
               rows={2}
             />
@@ -309,7 +403,7 @@ export function Timeline({ projectId, logItems, currentUserId }: Props) {
                     )}
                   </p>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {item.description}
+                    {renderDescriptionWithMentions(item.description, item.mentions)}
                   </p>
                 </div>
               )}

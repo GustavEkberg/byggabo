@@ -7,12 +7,13 @@ import { NextEffect } from '@/lib/next-effect';
 import { getSessionWithProperty } from '@/lib/services/auth/get-session';
 import { Db } from '@/lib/services/db/live-layer';
 import * as schema from '@/lib/services/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '@/lib/core/errors';
 
 const AddCommentInput = S.Struct({
   projectId: S.String.pipe(S.minLength(1)),
-  description: S.String.pipe(S.minLength(1), S.maxLength(2000))
+  description: S.String.pipe(S.minLength(1), S.maxLength(2000)),
+  mentionedContactIds: S.optional(S.Array(S.String))
 });
 
 type AddCommentInput = S.Schema.Type<typeof AddCommentInput>;
@@ -55,6 +56,29 @@ export const addCommentAction = async (input: AddCommentInput) => {
         'project.id': parsed.projectId
       });
 
+      // Verify mentioned contacts belong to property
+      const mentionedContactIds = parsed.mentionedContactIds ?? [];
+      if (mentionedContactIds.length > 0) {
+        const validContacts = yield* db
+          .select({ id: schema.contact.id })
+          .from(schema.contact)
+          .where(
+            and(
+              inArray(schema.contact.id, mentionedContactIds),
+              eq(schema.contact.propertyId, propertyId)
+            )
+          );
+
+        const validIds = new Set(validContacts.map(c => c.id));
+        const invalidIds = mentionedContactIds.filter(id => !validIds.has(id));
+        if (invalidIds.length > 0) {
+          return yield* new ValidationError({
+            message: 'Some mentioned contacts are invalid',
+            field: 'mentionedContactIds'
+          });
+        }
+      }
+
       const [logItem] = yield* db
         .insert(schema.logItem)
         .values({
@@ -64,6 +88,16 @@ export const addCommentAction = async (input: AddCommentInput) => {
           description: parsed.description
         })
         .returning();
+
+      // Insert mentions
+      if (mentionedContactIds.length > 0) {
+        yield* db.insert(schema.logItemMention).values(
+          mentionedContactIds.map(contactId => ({
+            logItemId: logItem.id,
+            contactId
+          }))
+        );
+      }
 
       return logItem;
     }).pipe(
