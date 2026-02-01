@@ -8,6 +8,7 @@ import { getProject } from '@/lib/core/project/queries';
 import { getCostItems } from '@/lib/core/cost-item/queries';
 import { getQuotations } from '@/lib/core/quotation/queries';
 import { getContacts } from '@/lib/core/contact/queries';
+import { getContactCategories } from '@/lib/core/contact-category/queries';
 import { getLogItems } from '@/lib/core/log-item/queries';
 import { getInvoices } from '@/lib/core/invoice/queries';
 import { getSections } from '@/lib/core/property-section/queries';
@@ -31,13 +32,14 @@ async function Content({ projectId }: { projectId: string }) {
 
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const { user } = yield* getSessionWithProperty();
+      const { user, propertyId } = yield* getSessionWithProperty();
       const [
         project,
         costItems,
         quotations,
         invoices,
         contacts,
+        categories,
         logItems,
         sections,
         linkedContacts
@@ -47,6 +49,7 @@ async function Content({ projectId }: { projectId: string }) {
         getQuotations(projectId),
         getInvoices(projectId),
         getContacts(),
+        getContactCategories(propertyId),
         getLogItems(projectId),
         getSections(),
         getProjectContacts(projectId)
@@ -84,7 +87,11 @@ async function Content({ projectId }: { projectId: string }) {
               />
             </div>
             <div className="space-y-6">
-              <ProjectContacts project={project} linkedContacts={linkedContacts} />
+              <ProjectContacts
+                project={project}
+                linkedContacts={linkedContacts}
+                categories={categories}
+              />
               <Timeline
                 projectId={projectId}
                 logItems={logItems}
