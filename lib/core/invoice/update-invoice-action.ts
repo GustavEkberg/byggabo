@@ -84,6 +84,7 @@ export const updateInvoiceAction = async (input: UpdateInvoiceInput) => {
       if (parsed.isPaid !== undefined && parsed.isPaid !== existing.invoice.isPaid) {
         yield* db.insert(schema.logItem).values({
           projectId: invoice.projectId,
+          createdById: user.id,
           type: 'INVOICE',
           referenceId: invoice.id,
           description: parsed.isPaid ? 'Invoice marked as paid' : 'Invoice marked as unpaid'

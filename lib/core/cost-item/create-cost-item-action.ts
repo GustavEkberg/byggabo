@@ -75,6 +75,7 @@ export const createCostItemAction = async (input: CreateCostItemInput) => {
       // Create log item for timeline
       yield* db.insert(schema.logItem).values({
         projectId: parsed.projectId,
+        createdById: user.id,
         type: 'COST_ITEM',
         referenceId: costItem.id,
         description: `Added cost: ${parsed.name} - ${parsed.amount} kr`

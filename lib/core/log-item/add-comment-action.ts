@@ -59,6 +59,7 @@ export const addCommentAction = async (input: AddCommentInput) => {
         .insert(schema.logItem)
         .values({
           projectId: parsed.projectId,
+          createdById: user.id,
           type: 'COMMENT',
           description: parsed.description
         })

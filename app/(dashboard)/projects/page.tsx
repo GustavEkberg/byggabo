@@ -5,8 +5,10 @@ import { NextEffect } from '@/lib/next-effect';
 import { AppLayer } from '@/lib/layers';
 import { getProjectsWithSummary } from '@/lib/core/project/queries';
 import { getSections } from '@/lib/core/property-section/queries';
+import { getRecentLogItems } from '@/lib/core/log-item/queries';
 import { ProjectList } from './project-list';
 import { CreateProjectDialog } from './create-project-dialog';
+import { DashboardTimeline } from './dashboard-timeline';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +17,11 @@ async function Content() {
 
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const [projects, sections] = yield* Effect.all([getProjectsWithSummary(), getSections()]);
+      const [projects, sections, recentActivity] = yield* Effect.all([
+        getProjectsWithSummary(),
+        getSections(),
+        getRecentLogItems(20)
+      ]);
 
       return (
         <div className="mx-auto max-w-6xl px-4 py-8">
@@ -27,16 +33,23 @@ async function Content() {
             <CreateProjectDialog sections={sections} />
           </div>
 
-          {projects.length === 0 ? (
-            <div className="text-center py-12 rounded-xl border bg-card">
-              <p className="text-muted-foreground">No projects yet.</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Create your first project to get started.
-              </p>
+          <div className="grid gap-8 lg:grid-cols-5">
+            <div className="lg:col-span-3">
+              {projects.length === 0 ? (
+                <div className="text-center py-12 rounded-xl border bg-card">
+                  <p className="text-muted-foreground">No projects yet.</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Create your first project to get started.
+                  </p>
+                </div>
+              ) : (
+                <ProjectList projects={projects} sections={sections} />
+              )}
             </div>
-          ) : (
-            <ProjectList projects={projects} sections={sections} />
-          )}
+            <div className="lg:col-span-2">
+              <DashboardTimeline logItems={recentActivity} />
+            </div>
+          </div>
         </div>
       );
     }).pipe(

@@ -96,6 +96,7 @@ export const createQuotationAction = async (input: CreateQuotationInput) => {
       // Create log item for timeline
       yield* db.insert(schema.logItem).values({
         projectId: parsed.projectId,
+        createdById: user.id,
         type: 'QUOTATION',
         referenceId: quotation.id,
         description: `Received quotation: ${parsed.description.slice(0, 50)}${parsed.description.length > 50 ? '...' : ''} - ${parsed.amount} kr`

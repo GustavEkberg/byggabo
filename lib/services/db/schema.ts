@@ -251,6 +251,7 @@ export const logItem = pgTable('logItem', {
   projectId: text('projectId')
     .notNull()
     .references(() => project.id, { onDelete: 'cascade' }),
+  createdById: text('createdById').references(() => user.id, { onDelete: 'set null' }),
   type: text('type', {
     enum: ['COST_ITEM', 'QUOTATION', 'INVOICE', 'COMMENT']
   }).notNull(),

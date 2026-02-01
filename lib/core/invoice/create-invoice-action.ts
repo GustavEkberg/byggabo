@@ -121,6 +121,7 @@ export const createInvoiceAction = async (input: CreateInvoiceInput) => {
 
       yield* db.insert(schema.logItem).values({
         projectId: invoice.projectId,
+        createdById: user.id,
         type: 'INVOICE',
         referenceId: invoice.id,
         description: logDescription

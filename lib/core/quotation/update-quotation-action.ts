@@ -103,6 +103,7 @@ export const updateQuotationAction = async (input: UpdateQuotationInput) => {
       if (parsed.status !== undefined && parsed.status !== existing.quotation.status) {
         yield* db.insert(schema.logItem).values({
           projectId: quotation.projectId,
+          createdById: user.id,
           type: 'QUOTATION',
           referenceId: quotation.id,
           description: `Quotation status changed to ${parsed.status.toLowerCase()}`

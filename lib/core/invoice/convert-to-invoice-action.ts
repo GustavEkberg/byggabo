@@ -104,6 +104,7 @@ export const convertToInvoiceAction = async (input: ConvertToInvoiceInput) => {
       // Create log item for the new invoice
       yield* db.insert(schema.logItem).values({
         projectId: invoice.projectId,
+        createdById: user.id,
         type: 'INVOICE',
         referenceId: invoice.id,
         description: `Invoice created from quotation: ${invoice.description}`

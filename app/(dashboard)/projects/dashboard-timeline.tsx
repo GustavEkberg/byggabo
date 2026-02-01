@@ -1,15 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { toast } from 'sonner';
-import type { LogItemWithUser } from '@/lib/core/log-item/queries';
+import Link from 'next/link';
+import type { LogItemWithProjectAndUser } from '@/lib/core/log-item/queries';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { addCommentAction } from '@/lib/core/log-item/add-comment-action';
 
 type Props = {
-  projectId: string;
-  logItems: LogItemWithUser[];
+  logItems: LogItemWithProjectAndUser[];
 };
 
 const LOG_TYPES = ['COST_ITEM', 'QUOTATION', 'INVOICE', 'COMMENT'] as const;
@@ -100,73 +97,21 @@ function getTypeLabel(type: LogType) {
   }
 }
 
-function isLogType(value: string): value is LogType {
-  return (
-    value === 'COST_ITEM' || value === 'QUOTATION' || value === 'INVOICE' || value === 'COMMENT'
-  );
-}
-
-export function Timeline({ projectId, logItems }: Props) {
+export function DashboardTimeline({ logItems }: Props) {
   const [filter, setFilter] = useState<LogType | 'ALL'>('ALL');
-  const [showAddComment, setShowAddComment] = useState(false);
-  const [comment, setComment] = useState('');
-  const [pending, setPending] = useState(false);
 
   const filteredItems = filter === 'ALL' ? logItems : logItems.filter(item => item.type === filter);
-
-  const handleAddComment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!comment.trim()) return;
-
-    setPending(true);
-    const result = await addCommentAction({
-      projectId,
-      description: comment.trim()
-    });
-    setPending(false);
-
-    if (result._tag === 'Error') {
-      toast.error(result.message);
-      return;
-    }
-
-    toast.success('Comment added');
-    setComment('');
-    setShowAddComment(false);
-  };
 
   return (
     <div className="border rounded-lg bg-card">
       <div className="p-4 border-b">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <h2 className="font-semibold">Timeline</h2>
-            <p className="text-sm text-muted-foreground">
-              {filteredItems.length} event{filteredItems.length !== 1 ? 's' : ''}
-              {filter !== 'ALL' && ` (${getTypeLabel(filter)})`}
-            </p>
-          </div>
-          <Button size="sm" variant="outline" onClick={() => setShowAddComment(!showAddComment)}>
-            {showAddComment ? 'Cancel' : 'Add Comment'}
-          </Button>
+        <div>
+          <h2 className="font-semibold">Recent Activity</h2>
+          <p className="text-sm text-muted-foreground">
+            {filteredItems.length} event{filteredItems.length !== 1 ? 's' : ''}
+            {filter !== 'ALL' && ` (${getTypeLabel(filter)})`}
+          </p>
         </div>
-
-        {showAddComment && (
-          <form onSubmit={handleAddComment} className="mt-4 space-y-2">
-            <Textarea
-              value={comment}
-              onChange={e => setComment(e.target.value)}
-              placeholder="Add a note or comment..."
-              maxLength={2000}
-              rows={2}
-            />
-            <div className="flex justify-end">
-              <Button type="submit" size="sm" disabled={pending || !comment.trim()}>
-                {pending ? 'Adding...' : 'Add'}
-              </Button>
-            </div>
-          </form>
-        )}
 
         <div className="mt-3 flex flex-wrap gap-1">
           <Button
@@ -181,11 +126,7 @@ export function Timeline({ projectId, logItems }: Props) {
               key={type}
               size="sm"
               variant={filter === type ? 'default' : 'outline'}
-              onClick={() => {
-                if (isLogType(type)) {
-                  setFilter(type);
-                }
-              }}
+              onClick={() => setFilter(type)}
             >
               {getTypeLabel(type)}
             </Button>
@@ -196,7 +137,7 @@ export function Timeline({ projectId, logItems }: Props) {
       {filteredItems.length === 0 ? (
         <div className="p-6 text-center text-muted-foreground text-sm">
           {filter === 'ALL'
-            ? 'No activity yet. Add costs, quotations, or invoices.'
+            ? 'No recent activity across projects.'
             : `No ${getTypeLabel(filter)?.toLowerCase()} events.`}
         </div>
       ) : (
@@ -208,7 +149,14 @@ export function Timeline({ projectId, logItems }: Props) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm">
-                  <span className="font-medium">{getTypeLabel(item.type)}</span>
+                  <Link
+                    href={`/projects/${item.projectId}`}
+                    className="font-medium hover:underline"
+                  >
+                    {item.project.name}
+                  </Link>
+                  <span className="mx-1.5 text-muted-foreground/50">&middot;</span>
+                  <span className="text-muted-foreground">{getTypeLabel(item.type)}</span>
                   {item.createdBy && (
                     <>
                       <span className="mx-1.5 text-muted-foreground/50">&middot;</span>
@@ -220,7 +168,7 @@ export function Timeline({ projectId, logItems }: Props) {
                     {item.createdAt.toLocaleDateString('sv-SE')}
                   </span>
                 </p>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-2">
                   {item.description}
                 </p>
               </div>
