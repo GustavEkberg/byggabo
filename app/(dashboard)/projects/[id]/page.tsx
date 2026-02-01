@@ -70,6 +70,7 @@ async function Content({ projectId }: { projectId: string }) {
               logItems={logItems}
               currentUserId={user.id}
               contacts={contacts}
+              allowAddComment
             />
           </div>
         </div>

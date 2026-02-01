@@ -1,91 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import type { LogItemWithProjectAndUser, LogItemMentionInfo } from '@/lib/core/log-item/queries';
+import type { LogItemWithUser, LogItemMentionInfo } from '@/lib/core/log-item/queries';
+import type { Contact } from '@/lib/services/db/schema';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { MentionInput } from '@/components/ui/mention-input';
 import { ContactHoverCard } from '@/components/ui/contact-hover-card';
+import { addCommentAction } from '@/lib/core/log-item/add-comment-action';
 import { updateLogItemAction } from '@/lib/core/log-item/update-log-item-action';
 
-/** Render description with @mentions as hover cards */
-function renderDescriptionWithMentions(
-  description: string,
-  mentions: LogItemMentionInfo[]
-): React.ReactNode {
-  if (mentions.length === 0) {
-    return description;
-  }
+type ContactSuggestion = Pick<Contact, 'id' | 'name' | 'company'>;
 
-  // Find all @Name occurrences using known contact names
-  type Match = { index: number; length: number; mention: LogItemMentionInfo };
-  const matches: Match[] = [];
-
-  for (const mention of mentions) {
-    const searchStr = `@${mention.contactName}`;
-    let pos = 0;
-    while ((pos = description.indexOf(searchStr, pos)) !== -1) {
-      matches.push({
-        index: pos,
-        length: searchStr.length,
-        mention
-      });
-      pos += searchStr.length;
-    }
-  }
-
-  if (matches.length === 0) {
-    return description;
-  }
-
-  // Sort by position
-  matches.sort((a, b) => a.index - b.index);
-
-  // Build parts
-  const parts: React.ReactNode[] = [];
-  let lastIndex = 0;
-
-  for (const match of matches) {
-    // Skip overlapping matches
-    if (match.index < lastIndex) continue;
-
-    // Add text before the mention
-    if (match.index > lastIndex) {
-      parts.push(description.slice(lastIndex, match.index));
-    }
-
-    const m = match.mention;
-
-    parts.push(
-      <ContactHoverCard
-        key={`${m.contactId}-${match.index}`}
-        contact={{
-          name: m.contactName,
-          email: m.contactEmail,
-          phone: m.contactPhone,
-          company: m.contactCompany
-        }}
-      >
-        @{m.contactName}
-      </ContactHoverCard>
-    );
-
-    lastIndex = match.index + match.length;
-  }
-
-  // Add remaining text
-  if (lastIndex < description.length) {
-    parts.push(description.slice(lastIndex));
-  }
-
-  return parts;
-}
+/** Extended log item with optional project info for dashboard view */
+export type TimelineItem = LogItemWithUser & {
+  project?: { id: string; name: string };
+};
 
 type Props = {
-  logItems: LogItemWithProjectAndUser[];
+  /** Project ID for adding comments (required if allowAddComment) */
+  projectId?: string;
+  /** Log items to display */
+  logItems: TimelineItem[];
+  /** Current user ID for edit permissions */
   currentUserId: string;
+  /** Contacts for @mention suggestions */
+  contacts?: ContactSuggestion[];
+  /** Title shown in header */
+  title?: string;
+  /** Subtitle shown in header */
+  subtitle?: string;
+  /** Whether to show "Add Comment" button */
+  allowAddComment?: boolean;
+  /** Whether to show project name (for dashboard view) */
+  showProjectName?: boolean;
 };
 
 const LOG_TYPES = ['COST_ITEM', 'QUOTATION', 'INVOICE', 'COMMENT'] as const;
@@ -176,8 +127,93 @@ function getTypeLabel(type: LogType) {
   }
 }
 
-export function DashboardTimeline({ logItems, currentUserId }: Props) {
+function isLogType(value: string): value is LogType {
+  return (
+    value === 'COST_ITEM' || value === 'QUOTATION' || value === 'INVOICE' || value === 'COMMENT'
+  );
+}
+
+/** Render description with @mentions as hover cards */
+function renderDescriptionWithMentions(
+  description: string,
+  mentions: LogItemMentionInfo[]
+): React.ReactNode {
+  if (mentions.length === 0) {
+    return description;
+  }
+
+  type Match = { index: number; length: number; mention: LogItemMentionInfo };
+  const matches: Match[] = [];
+
+  for (const mention of mentions) {
+    const searchStr = `@${mention.contactName}`;
+    let pos = 0;
+    while ((pos = description.indexOf(searchStr, pos)) !== -1) {
+      matches.push({
+        index: pos,
+        length: searchStr.length,
+        mention
+      });
+      pos += searchStr.length;
+    }
+  }
+
+  if (matches.length === 0) {
+    return description;
+  }
+
+  matches.sort((a, b) => a.index - b.index);
+
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+
+  for (const match of matches) {
+    if (match.index < lastIndex) continue;
+
+    if (match.index > lastIndex) {
+      parts.push(description.slice(lastIndex, match.index));
+    }
+
+    const m = match.mention;
+
+    parts.push(
+      <ContactHoverCard
+        key={`${m.contactId}-${match.index}`}
+        contact={{
+          name: m.contactName,
+          email: m.contactEmail,
+          phone: m.contactPhone,
+          company: m.contactCompany
+        }}
+      >
+        @{m.contactName}
+      </ContactHoverCard>
+    );
+
+    lastIndex = match.index + match.length;
+  }
+
+  if (lastIndex < description.length) {
+    parts.push(description.slice(lastIndex));
+  }
+
+  return parts;
+}
+
+export function Timeline({
+  projectId,
+  logItems,
+  currentUserId,
+  contacts = [],
+  title = 'Timeline',
+  subtitle,
+  allowAddComment = false,
+  showProjectName = false
+}: Props) {
   const [filter, setFilter] = useState<LogType | 'ALL'>('ALL');
+  const [showAddComment, setShowAddComment] = useState(false);
+  const [comment, setComment] = useState('');
+  const [mentionedContactIds, setMentionedContactIds] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState('');
@@ -185,10 +221,48 @@ export function DashboardTimeline({ logItems, currentUserId }: Props) {
 
   const filteredItems = filter === 'ALL' ? logItems : logItems.filter(item => item.type === filter);
 
-  const startEditing = (item: LogItemWithProjectAndUser) => {
+  const contactSuggestions = contacts.map(c => ({
+    id: c.id,
+    name: c.name,
+    subtitle: c.company ?? undefined
+  }));
+
+  const handleMentionsChange = useCallback((ids: string[]) => {
+    setMentionedContactIds(ids);
+  }, []);
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!comment.trim() || !projectId) return;
+
+    setPending(true);
+    const result = await addCommentAction({
+      projectId,
+      description: comment.trim(),
+      mentionedContactIds: mentionedContactIds.length > 0 ? mentionedContactIds : undefined
+    });
+    setPending(false);
+
+    if (result._tag === 'Error') {
+      toast.error(result.message);
+      return;
+    }
+
+    toast.success('Comment added');
+    setComment('');
+    setMentionedContactIds([]);
+    setShowAddComment(false);
+  };
+
+  const startEditing = (item: TimelineItem) => {
     setEditingId(item.id);
     setEditDescription(item.description);
-    setEditDate(item.createdAt.toISOString().split('T')[0]);
+    // Format as datetime-local value (YYYY-MM-DDTHH:MM)
+    const d = item.createdAt;
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    setEditDate(
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    );
   };
 
   const cancelEditing = () => {
@@ -202,10 +276,11 @@ export function DashboardTimeline({ logItems, currentUserId }: Props) {
     if (!editingId || !editDescription.trim()) return;
 
     setPending(true);
+    // Convert datetime-local to ISO string with timezone
     const result = await updateLogItemAction({
       logItemId: editingId,
       description: editDescription.trim(),
-      createdAt: new Date(editDate)
+      createdAt: new Date(editDate).toISOString()
     });
     setPending(false);
 
@@ -218,18 +293,45 @@ export function DashboardTimeline({ logItems, currentUserId }: Props) {
     cancelEditing();
   };
 
-  const canEdit = (item: LogItemWithProjectAndUser) => item.createdBy?.id === currentUserId;
+  const canEdit = (item: TimelineItem) => item.createdBy?.id === currentUserId;
+
+  const displaySubtitle =
+    subtitle ??
+    `${filteredItems.length} event${filteredItems.length !== 1 ? 's' : ''}${filter !== 'ALL' ? ` (${getTypeLabel(filter)})` : ''}`;
 
   return (
     <div className="border rounded-lg bg-card">
       <div className="p-4 border-b">
-        <div>
-          <h2 className="font-semibold">Recent Activity</h2>
-          <p className="text-sm text-muted-foreground">
-            {filteredItems.length} event{filteredItems.length !== 1 ? 's' : ''}
-            {filter !== 'ALL' && ` (${getTypeLabel(filter)})`}
-          </p>
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h2 className="font-semibold">{title}</h2>
+            <p className="text-sm text-muted-foreground">{displaySubtitle}</p>
+          </div>
+          {allowAddComment && projectId && (
+            <Button size="sm" variant="outline" onClick={() => setShowAddComment(!showAddComment)}>
+              {showAddComment ? 'Cancel' : 'Add Comment'}
+            </Button>
+          )}
         </div>
+
+        {showAddComment && projectId && (
+          <form onSubmit={handleAddComment} className="mt-4 space-y-2">
+            <MentionInput
+              value={comment}
+              onChange={setComment}
+              onMentionsChange={handleMentionsChange}
+              suggestions={contactSuggestions}
+              placeholder="Add a note or comment... Use @ to mention contacts"
+              maxLength={2000}
+              rows={2}
+            />
+            <div className="flex justify-end">
+              <Button type="submit" size="sm" disabled={pending || !comment.trim()}>
+                {pending ? 'Adding...' : 'Add'}
+              </Button>
+            </div>
+          </form>
+        )}
 
         <div className="mt-3 flex flex-wrap gap-1">
           <Button
@@ -244,7 +346,11 @@ export function DashboardTimeline({ logItems, currentUserId }: Props) {
               key={type}
               size="sm"
               variant={filter === type ? 'default' : 'outline'}
-              onClick={() => setFilter(type)}
+              onClick={() => {
+                if (isLogType(type)) {
+                  setFilter(type);
+                }
+              }}
             >
               {getTypeLabel(type)}
             </Button>
@@ -255,7 +361,7 @@ export function DashboardTimeline({ logItems, currentUserId }: Props) {
       {filteredItems.length === 0 ? (
         <div className="p-6 text-center text-muted-foreground text-sm">
           {filter === 'ALL'
-            ? 'No recent activity across projects.'
+            ? 'No activity yet.'
             : `No ${getTypeLabel(filter)?.toLowerCase()} events.`}
         </div>
       ) : (
@@ -273,7 +379,11 @@ export function DashboardTimeline({ logItems, currentUserId }: Props) {
                     maxLength={2000}
                     rows={2}
                   />
-                  <Input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} />
+                  <Input
+                    type="datetime-local"
+                    value={editDate}
+                    onChange={e => setEditDate(e.target.value)}
+                  />
                   <div className="flex gap-2 justify-end">
                     <Button
                       type="button"
@@ -292,14 +402,20 @@ export function DashboardTimeline({ logItems, currentUserId }: Props) {
               ) : (
                 <div className="flex-1 min-w-0">
                   <p className="text-sm">
-                    <Link
-                      href={`/projects/${item.projectId}`}
-                      className="font-medium hover:underline"
-                    >
-                      {item.project.name}
-                    </Link>
-                    <span className="mx-1.5 text-muted-foreground/50">&middot;</span>
-                    <span className="text-muted-foreground">{getTypeLabel(item.type)}</span>
+                    {showProjectName && item.project && (
+                      <>
+                        <Link
+                          href={`/projects/${item.projectId}`}
+                          className="font-medium hover:underline"
+                        >
+                          {item.project.name}
+                        </Link>
+                        <span className="mx-1.5 text-muted-foreground/50">&middot;</span>
+                      </>
+                    )}
+                    <span className={showProjectName ? 'text-muted-foreground' : 'font-medium'}>
+                      {getTypeLabel(item.type)}
+                    </span>
                     {item.createdBy && (
                       <>
                         <span className="mx-1.5 text-muted-foreground/50">&middot;</span>
@@ -308,7 +424,11 @@ export function DashboardTimeline({ logItems, currentUserId }: Props) {
                     )}
                     <span className="mx-1.5 text-muted-foreground/50">&middot;</span>
                     <span className="text-muted-foreground">
-                      {item.createdAt.toLocaleDateString('sv-SE')}
+                      {item.createdAt.toLocaleDateString('sv-SE')}{' '}
+                      {item.createdAt.toLocaleTimeString('sv-SE', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
                     </span>
                     {canEdit(item) && (
                       <button
@@ -333,7 +453,9 @@ export function DashboardTimeline({ logItems, currentUserId }: Props) {
                       </button>
                     )}
                   </p>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-2">
+                  <p
+                    className={`text-sm text-muted-foreground whitespace-pre-wrap ${showProjectName ? 'line-clamp-2' : ''}`}
+                  >
                     {renderDescriptionWithMentions(item.description, item.mentions)}
                   </p>
                 </div>

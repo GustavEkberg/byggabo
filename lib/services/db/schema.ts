@@ -1,4 +1,8 @@
-import { pgTable, text, timestamp, boolean, decimal } from 'drizzle-orm/pg-core';
+import { pgTable, text, boolean, decimal } from 'drizzle-orm/pg-core';
+import { timestamp as pgTimestamp } from 'drizzle-orm/pg-core';
+
+// Use timestamptz (with timezone) for all timestamps
+const timestamp = (name: string) => pgTimestamp(name, { withTimezone: true });
 import { defineRelations } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 

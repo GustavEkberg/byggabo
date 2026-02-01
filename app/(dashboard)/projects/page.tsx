@@ -9,7 +9,7 @@ import { getSections } from '@/lib/core/property-section/queries';
 import { getRecentLogItems } from '@/lib/core/log-item/queries';
 import { ProjectList } from './project-list';
 import { CreateProjectDialog } from './create-project-dialog';
-import { DashboardTimeline } from './dashboard-timeline';
+import { Timeline } from '@/components/ui/timeline';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,7 +49,13 @@ async function Content() {
               )}
             </div>
             <div>
-              <DashboardTimeline logItems={recentActivity} currentUserId={user.id} />
+              <Timeline
+                logItems={recentActivity}
+                currentUserId={user.id}
+                title="Recent Activity"
+                subtitle="Latest updates across all projects"
+                showProjectName
+              />
             </div>
           </div>
         </div>

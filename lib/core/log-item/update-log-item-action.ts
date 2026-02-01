@@ -13,7 +13,7 @@ import { ValidationError, NotFoundError, UnauthorizedError } from '@/lib/core/er
 const UpdateLogItemInput = S.Struct({
   logItemId: S.String.pipe(S.minLength(1)),
   description: S.optional(S.String.pipe(S.minLength(1), S.maxLength(2000))),
-  createdAt: S.optional(S.Date)
+  createdAt: S.optional(S.String)
 });
 
 type UpdateLogItemInput = S.Schema.Type<typeof UpdateLogItemInput>;
@@ -71,7 +71,7 @@ export const updateLogItemAction = async (input: UpdateLogItemInput) => {
       // Build update object
       const updateData: Partial<schema.InsertLogItem> = {};
       if (parsed.description !== undefined) updateData.description = parsed.description;
-      if (parsed.createdAt !== undefined) updateData.createdAt = parsed.createdAt;
+      if (parsed.createdAt !== undefined) updateData.createdAt = new Date(parsed.createdAt);
 
       if (Object.keys(updateData).length === 0) {
         return existing.logItem;
@@ -83,6 +83,7 @@ export const updateLogItemAction = async (input: UpdateLogItemInput) => {
         .where(eq(schema.logItem.id, parsed.logItemId))
         .returning();
 
+      console.log('updated logItem:', logItem);
       return logItem;
     }).pipe(
       Effect.withSpan('action.logItem.update', {
