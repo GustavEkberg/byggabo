@@ -22,8 +22,8 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { SelectContactDropdown } from '@/components/ui/select-contact-dropdown';
 import { createInvoiceAction } from '@/lib/core/invoice/create-invoice-action';
-import { createContactAction } from '@/lib/core/contact/create-contact-action';
 import { getUploadUrlAction } from '@/lib/core/file/get-upload-url-action';
 import type { Contact } from '@/lib/services/db/schema';
 
@@ -51,13 +51,6 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Inline contact creation
-  const [showNewContact, setShowNewContact] = useState(false);
-  const [newContactName, setNewContactName] = useState('');
-  const [newContactCompany, setNewContactCompany] = useState('');
-  const [newContactEmail, setNewContactEmail] = useState('');
-  const [newContactPhone, setNewContactPhone] = useState('');
-
   const handleQuotationChange = (value: string) => {
     if (value === '') {
       setQuotationId(null);
@@ -71,7 +64,6 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
       // Also set contact if quotation has one
       if (quotation.contactId) {
         setContactId(quotation.contactId);
-        setShowNewContact(false);
       }
     }
   };
@@ -80,25 +72,7 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
     e.preventDefault();
     setPending(true);
 
-    let finalContactId: string | null = contactId || null;
-
-    // Create new contact inline if needed
-    if (showNewContact && newContactName.trim()) {
-      const contactResult = await createContactAction({
-        name: newContactName,
-        company: newContactCompany || undefined,
-        email: newContactEmail || undefined,
-        phone: newContactPhone || undefined
-      });
-
-      if (contactResult._tag === 'Error') {
-        toast.error('Failed to create contact');
-        setPending(false);
-        return;
-      }
-
-      finalContactId = contactResult.contact.id;
-    }
+    const finalContactId: string | null = contactId || null;
 
     let fileUrl: string | null = null;
 
@@ -161,11 +135,6 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
     setQuotationId(null);
     setContactId('');
     setFile(null);
-    setShowNewContact(false);
-    setNewContactName('');
-    setNewContactCompany('');
-    setNewContactEmail('');
-    setNewContactPhone('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -246,84 +215,13 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
               />
             </div>
           </div>
-          <div className="grid gap-2">
-            <div className="flex items-center justify-between">
-              <label htmlFor="create-contact" className="text-sm font-medium">
-                Contractor
-              </label>
-              {!showNewContact && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowNewContact(true)}
-                >
-                  + New
-                </Button>
-              )}
-            </div>
-
-            {showNewContact ? (
-              <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">New Contractor</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setShowNewContact(false);
-                      setNewContactName('');
-                      setNewContactCompany('');
-                      setNewContactEmail('');
-                      setNewContactPhone('');
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-                <Input
-                  placeholder="Name *"
-                  value={newContactName}
-                  onChange={e => setNewContactName(e.target.value)}
-                  required={showNewContact}
-                />
-                <Input
-                  placeholder="Company"
-                  value={newContactCompany}
-                  onChange={e => setNewContactCompany(e.target.value)}
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    type="email"
-                    placeholder="Email"
-                    value={newContactEmail}
-                    onChange={e => setNewContactEmail(e.target.value)}
-                  />
-                  <Input
-                    type="tel"
-                    placeholder="Phone"
-                    value={newContactPhone}
-                    onChange={e => setNewContactPhone(e.target.value)}
-                  />
-                </div>
-              </div>
-            ) : (
-              <Select value={contactId} onValueChange={value => setContactId(value ?? '')}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="No contractor selected" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">No contractor selected</SelectItem>
-                  {contacts.map(contact => (
-                    <SelectItem key={contact.id} value={contact.id}>
-                      {contact.company ? `${contact.company} (${contact.name})` : contact.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
+          <SelectContactDropdown
+            contacts={contacts}
+            value={contactId}
+            onChange={setContactId}
+            label="Contractor"
+            placeholder="No contractor selected"
+          />
 
           <div className="grid gap-2">
             <label htmlFor="create-invoice-file" className="text-sm font-medium">
@@ -339,15 +237,7 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
           </div>
           <DialogFooter>
             <DialogClose render={<Button variant="outline" type="button" />}>Cancel</DialogClose>
-            <Button
-              type="submit"
-              disabled={
-                pending ||
-                !description.trim() ||
-                !amount ||
-                (showNewContact && !newContactName.trim())
-              }
-            >
+            <Button type="submit" disabled={pending || !description.trim() || !amount}>
               {pending ? 'Creating...' : 'Create'}
             </Button>
           </DialogFooter>

@@ -15,14 +15,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { SelectContactDropdown } from '@/components/ui/select-contact-dropdown';
 import type { Contact } from '@/lib/services/db/schema';
 import { updateQuotationAction } from '@/lib/core/quotation/update-quotation-action';
 import { getUploadUrlAction } from '@/lib/core/file/get-upload-url-action';
@@ -203,22 +197,13 @@ function EditQuotationForm({
           </div>
         </div>
 
-        <div className="grid gap-2">
-          <label className="text-sm font-medium">Contractor</label>
-          <Select value={contactId} onValueChange={value => setContactId(value ?? '')}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="No contractor selected" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">No contractor selected</SelectItem>
-              {contacts.map(contact => (
-                <SelectItem key={contact.id} value={contact.id}>
-                  {contact.company ? `${contact.company} (${contact.name})` : contact.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <SelectContactDropdown
+          contacts={contacts}
+          value={contactId}
+          onChange={setContactId}
+          label="Contractor"
+          placeholder="No contractor selected"
+        />
 
         <div className="grid gap-2">
           <label htmlFor="edit-quotationFile" className="text-sm font-medium">

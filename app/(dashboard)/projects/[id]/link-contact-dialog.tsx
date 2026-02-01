@@ -14,13 +14,7 @@ import {
   DialogTitle,
   DialogTrigger
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
+import { SelectContactDropdown } from '@/components/ui/select-contact-dropdown';
 import type { Contact, Project } from '@/lib/services/db/schema';
 import { linkContactAction } from '@/lib/core/project-contact/link-contact-action';
 
@@ -35,9 +29,17 @@ export function LinkContactDialog({ project, contacts, linkedContactIds }: Props
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [selectedContactId, setSelectedContactId] = useState<string>('');
+  const [localContacts, setLocalContacts] = useState<Contact[]>([]);
 
-  // Filter to only show unlinked contacts
-  const availableContacts = contacts.filter(c => !linkedContactIds.includes(c.id));
+  // Merge server contacts with locally created ones (dedupe by id), filter to unlinked
+  const serverContactIds = new Set(contacts.map(c => c.id));
+  const newLocalContacts = localContacts.filter(c => !serverContactIds.has(c.id));
+  const allContacts = [...contacts, ...newLocalContacts];
+  const availableContacts = allContacts.filter(c => !linkedContactIds.includes(c.id));
+
+  const handleContactCreated = (contact: Contact) => {
+    setLocalContacts(prev => [...prev, contact]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,14 +65,9 @@ export function LinkContactDialog({ project, contacts, linkedContactIds }: Props
     router.refresh();
   };
 
-  if (availableContacts.length === 0) {
-    return (
-      <Button variant="outline" size="sm" disabled title="All contacts are already linked">
-        <UserPlus className="h-4 w-4 mr-1" />
-        Link Contact
-      </Button>
-    );
-  }
+  // Only disable if all contacts are linked AND we don't allow creating new ones
+  // But since we allow creating, we never fully disable
+  const noAvailableContacts = availableContacts.length === 0 && localContacts.length === 0;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -84,26 +81,14 @@ export function LinkContactDialog({ project, contacts, linkedContactIds }: Props
           <DialogDescription>Link a contact to this project for easy reference.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4">
-          <div className="grid gap-2">
-            <label className="text-sm font-medium">Contact</label>
-            <Select value={selectedContactId} onValueChange={v => setSelectedContactId(v ?? '')}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a contact..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availableContacts.map(contact => (
-                  <SelectItem key={contact.id} value={contact.id}>
-                    <span className="flex flex-col items-start">
-                      <span>{contact.name}</span>
-                      {contact.company && (
-                        <span className="text-xs text-muted-foreground">{contact.company}</span>
-                      )}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <SelectContactDropdown
+            contacts={availableContacts}
+            value={selectedContactId}
+            onChange={setSelectedContactId}
+            label="Contact"
+            placeholder={noAvailableContacts ? 'Create a new contact...' : 'Select a contact...'}
+            onContactCreated={handleContactCreated}
+          />
           <DialogFooter>
             <Button type="submit" disabled={pending || !selectedContactId}>
               {pending ? 'Linking...' : 'Link Contact'}
