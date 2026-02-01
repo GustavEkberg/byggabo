@@ -55,10 +55,10 @@ type MockProject = {
 };
 
 const MOCK_PROJECT_SE: MockProject = {
-  name: 'Koksrenovering',
-  section: 'Kok',
+  name: 'Köksrenovering',
+  section: 'Kök',
   sectionColor: '#f97316',
-  description: 'Helrenovering av koket med nya vitvaror',
+  description: 'Helrenovering av köket med nya vitvaror',
   quoteRangeMin: 125000,
   quoteRangeMax: 175000,
   pendingQuotes: 3,
@@ -67,7 +67,7 @@ const MOCK_PROJECT_SE: MockProject = {
   quotationCount: 5,
   costItemCount: 8,
   invoiceCount: 2,
-  lastActivity: '2h sedan'
+  lastActivity: '2 tim sedan'
 };
 
 const MOCK_PROJECT_EU: MockProject = {
@@ -103,15 +103,15 @@ const MOCK_CONTACTS_SE: Record<string, MockContact> = {
     phone: '070-123 45 67',
     website: 'snickeriab.se'
   },
-  'Peter Tradgard': {
-    name: 'Peter Tradgard',
-    company: 'Tradgard & Design',
+  'Peter Trädgård': {
+    name: 'Peter Trädgård',
+    company: 'Trädgård & Design',
     email: 'peter@tradgard-design.se',
     phone: '070-234 56 78'
   },
-  'Maria Ror': {
-    name: 'Maria Ror',
-    company: 'Rorjouren',
+  'Maria Rör': {
+    name: 'Maria Rör',
+    company: 'Rörjouren',
     email: 'maria@rorjouren.se',
     phone: '070-345 67 89',
     website: 'rorjouren.se'
@@ -157,8 +157,8 @@ const MOCK_EVENTS_SE: MockEvent[] = [
   {
     id: '1',
     type: 'quotation',
-    project: 'Koksrenovering',
-    description: 'Offert fran Snickeri AB',
+    project: 'Köksrenovering',
+    description: 'Offert från Snickeri AB',
     amount: 45000,
     date: '2026-01-28',
     user: 'Erik'
@@ -175,8 +175,8 @@ const MOCK_EVENTS_SE: MockEvent[] = [
   {
     id: '3',
     type: 'comment',
-    project: 'Koksrenovering',
-    description: 'Pratade med @Johan Snickare, montering paborjas imorgon',
+    project: 'Köksrenovering',
+    description: 'Pratade med @Johan Snickare, montering påbörjas imorgon',
     date: '2026-01-27',
     user: 'Erik',
     mentionedContact: 'Johan Snickare'
@@ -185,7 +185,7 @@ const MOCK_EVENTS_SE: MockEvent[] = [
     id: '4',
     type: 'invoice',
     project: 'Altan & uteplats',
-    description: 'Faktura fran Tradgard & Design',
+    description: 'Faktura från Trädgård & Design',
     amount: 8500,
     date: '2026-01-26',
     user: 'Anna'
@@ -194,7 +194,7 @@ const MOCK_EVENTS_SE: MockEvent[] = [
     id: '5',
     type: 'quotation',
     project: 'Badrumsrenovering',
-    description: 'Offert fran Rorjouren',
+    description: 'Offert från Rörjouren',
     amount: 28000,
     date: '2026-01-25',
     user: 'Erik'
@@ -202,7 +202,7 @@ const MOCK_EVENTS_SE: MockEvent[] = [
   {
     id: '6',
     type: 'expense',
-    project: 'Koksrenovering',
+    project: 'Köksrenovering',
     description: 'Vitvaror - kyl och frys',
     amount: 18900,
     date: '2026-01-24',
@@ -212,16 +212,16 @@ const MOCK_EVENTS_SE: MockEvent[] = [
     id: '7',
     type: 'comment',
     project: 'Altan & uteplats',
-    description: 'Vantar pa bra vader enligt @Peter Tradgard',
+    description: 'Väntar på bra väder enligt @Peter Trädgård',
     date: '2026-01-24',
     user: 'Erik',
-    mentionedContact: 'Peter Tradgard'
+    mentionedContact: 'Peter Trädgård'
   },
   {
     id: '8',
     type: 'expense',
     project: 'Badrumsrenovering',
-    description: 'Duschvagg och armatur',
+    description: 'Duschvägg och armatur',
     amount: 7200,
     date: '2026-01-23',
     user: 'Anna'
@@ -229,8 +229,8 @@ const MOCK_EVENTS_SE: MockEvent[] = [
   {
     id: '9',
     type: 'quotation',
-    project: 'Koksrenovering',
-    description: 'Offert fran Elektriker Direkt',
+    project: 'Köksrenovering',
+    description: 'Offert från Elektriker Direkt',
     amount: 15000,
     date: '2026-01-22',
     user: 'Erik'
@@ -238,7 +238,7 @@ const MOCK_EVENTS_SE: MockEvent[] = [
   {
     id: '10',
     type: 'invoice',
-    project: 'Koksrenovering',
+    project: 'Köksrenovering',
     description: 'Delbetalning till snickare',
     amount: 22500,
     date: '2026-01-21',
@@ -248,16 +248,16 @@ const MOCK_EVENTS_SE: MockEvent[] = [
     id: '11',
     type: 'comment',
     project: 'Badrumsrenovering',
-    description: '@Maria Ror slutfor installationen pa fredag',
+    description: '@Maria Rör slutför installationen på fredag',
     date: '2026-01-20',
     user: 'Erik',
-    mentionedContact: 'Maria Ror'
+    mentionedContact: 'Maria Rör'
   },
   {
     id: '12',
     type: 'expense',
     project: 'Altan & uteplats',
-    description: 'Tradack och skruv',
+    description: 'Trädäck och skruv',
     amount: 4200,
     date: '2026-01-19',
     user: 'Anna'
