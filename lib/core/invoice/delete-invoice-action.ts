@@ -11,57 +11,57 @@ import * as schema from '@/lib/services/db/schema';
 import { eq } from 'drizzle-orm';
 import { NotFoundError } from '@/lib/core/errors';
 
-export const deleteCostItemAction = async (costItemId: string) => {
+export const deleteInvoiceAction = async (invoiceId: string) => {
   return await NextEffect.runPromise(
     Effect.gen(function* () {
       const { propertyId, user } = yield* getSessionWithProperty();
       const db = yield* Db;
 
-      // Get cost item with project to verify ownership
+      // Get invoice with project to verify ownership
       const [existing] = yield* db
         .select({
-          costItem: schema.costItem,
+          invoice: schema.invoice,
           project: {
             id: schema.project.id,
             propertyId: schema.project.propertyId
           }
         })
-        .from(schema.costItem)
-        .innerJoin(schema.project, eq(schema.costItem.projectId, schema.project.id))
-        .where(eq(schema.costItem.id, costItemId))
+        .from(schema.invoice)
+        .innerJoin(schema.project, eq(schema.invoice.projectId, schema.project.id))
+        .where(eq(schema.invoice.id, invoiceId))
         .limit(1);
 
       if (!existing || existing.project.propertyId !== propertyId) {
         return yield* new NotFoundError({
-          message: 'Cost item not found',
-          entity: 'costItem',
-          id: costItemId
+          message: 'Invoice not found',
+          entity: 'invoice',
+          id: invoiceId
         });
       }
 
       const projectId = existing.project.id;
-      const receiptFileUrl = existing.costItem.receiptFileUrl;
+      const fileUrl = existing.invoice.fileUrl;
 
       yield* Effect.annotateCurrentSpan({
         'user.id': user.id,
-        'costItem.id': costItemId,
+        'invoice.id': invoiceId,
         'project.id': projectId
       });
 
       // Delete S3 file if exists
-      yield* Option.fromNullable(receiptFileUrl).pipe(
+      yield* Option.fromNullable(fileUrl).pipe(
         Option.match({
           onNone: () => Effect.void,
-          onSome: fileUrl =>
+          onSome: url =>
             Effect.gen(function* () {
               const s3 = yield* S3;
-              const key = s3.getObjectKeyFromUrl(fileUrl);
+              const key = s3.getObjectKeyFromUrl(url);
               yield* s3.deleteFile(key);
             }).pipe(
               Effect.tapError(e =>
-                Effect.logWarning('Failed to delete S3 file for cost item', {
-                  costItemId,
-                  fileUrl,
+                Effect.logWarning('Failed to delete S3 file for invoice', {
+                  invoiceId,
+                  fileUrl: url,
                   error: e
                 })
               ),
@@ -71,15 +71,15 @@ export const deleteCostItemAction = async (costItemId: string) => {
       );
 
       // Delete associated log items first
-      yield* db.delete(schema.logItem).where(eq(schema.logItem.referenceId, costItemId));
+      yield* db.delete(schema.logItem).where(eq(schema.logItem.referenceId, invoiceId));
 
-      // Delete the cost item
-      yield* db.delete(schema.costItem).where(eq(schema.costItem.id, costItemId));
+      // Delete the invoice
+      yield* db.delete(schema.invoice).where(eq(schema.invoice.id, invoiceId));
 
       return { projectId };
     }).pipe(
-      Effect.withSpan('action.costItem.delete', {
-        attributes: { operation: 'costItem.delete' }
+      Effect.withSpan('action.invoice.delete', {
+        attributes: { operation: 'invoice.delete' }
       }),
       Effect.provide(AppLayer),
       Effect.scoped,
@@ -97,7 +97,7 @@ export const deleteCostItemAction = async (costItemId: string) => {
             Match.orElse(() =>
               Effect.succeed({
                 _tag: 'Error' as const,
-                message: 'Failed to delete cost item'
+                message: 'Failed to delete invoice'
               })
             )
           ),
