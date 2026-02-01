@@ -33,6 +33,9 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         <Link href="/projects" className="text-lg font-semibold tracking-tight">
+          <span className="mr-0.5 text-2xl" style={{ WebkitTextStroke: '1.5px currentColor' }}>
+            ⌂
+          </span>
           Byggabo
         </Link>
 
