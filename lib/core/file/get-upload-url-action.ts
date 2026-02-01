@@ -42,9 +42,9 @@ export const getUploadUrlAction = async (input: GetUploadUrlInput) => {
         'file.folder': input.folder
       });
 
-      // Generate unique key: folder/propertyId/timestamp-filename
+      // Generate unique key: propertyId/folder/timestamp-filename
       // This organizes files by property so all household members share access
-      const key = `${input.folder}/${propertyId}/${Date.now()}-${input.fileName}`;
+      const key = `${propertyId}/${input.folder}/${Date.now()}-${input.fileName}`;
 
       // Signed URL expires in 5 minutes - enough time for upload
       const signedUrl = yield* s3.createSignedUrl(key, 300);
