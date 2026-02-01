@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type { CostItem } from '@/lib/services/db/schema';
 import { updateCostItemAction } from '@/lib/core/cost-item/update-cost-item-action';
 import { getUploadUrlAction } from '@/lib/core/file/get-upload-url-action';
+import { FileLink } from '@/components/ui/file-link';
 
 type Props = {
   costItem: CostItem;
@@ -173,14 +174,9 @@ export function EditCostItemDialog({ costItem }: Props) {
             </label>
             {receiptUrl && !file ? (
               <div className="flex items-center gap-2">
-                <a
-                  href={receiptUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline"
-                >
+                <FileLink fileUrl={receiptUrl} className="text-sm">
                   View current receipt
-                </a>
+                </FileLink>
                 <Button type="button" variant="ghost" size="xs" onClick={handleRemoveReceipt}>
                   Remove
                 </Button>

@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type { Contact } from '@/lib/services/db/schema';
 import { updateQuotationAction } from '@/lib/core/quotation/update-quotation-action';
 import { getUploadUrlAction } from '@/lib/core/file/get-upload-url-action';
+import { FileLink } from '@/components/ui/file-link';
 
 type QuotationWithContact = {
   id: string;
@@ -225,15 +226,7 @@ function EditQuotationForm({
           </label>
           {quotation.fileUrl && (
             <p className="text-xs text-muted-foreground">
-              Current:{' '}
-              <a
-                href={quotation.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                View file
-              </a>
+              Current: <FileLink fileUrl={quotation.fileUrl}>View file</FileLink>
             </p>
           )}
           <Input

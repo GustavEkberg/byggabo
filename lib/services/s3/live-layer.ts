@@ -145,7 +145,7 @@ export class S3 extends Effect.Service<S3>()('@app/S3', {
         Effect.tapError(error => Effect.logError('S3 saveFile failed', { key, error }))
       );
 
-    const createSignedUrl = (key: string, expiresIn = 300) =>
+    const createSignedUploadUrl = (key: string, expiresIn = 300) =>
       Effect.gen(function* () {
         yield* Effect.annotateCurrentSpan({
           's3.bucket': config.bucket,
@@ -163,9 +163,38 @@ export class S3 extends Effect.Service<S3>()('@app/S3', {
 
         return signedUrl;
       }).pipe(
-        Effect.withSpan('S3.createSignedUrl'),
-        Effect.tapError(error => Effect.logError('S3 createSignedUrl failed', { key, error }))
+        Effect.withSpan('S3.createSignedUploadUrl'),
+        Effect.tapError(error => Effect.logError('S3 createSignedUploadUrl failed', { key, error }))
       );
+
+    const createSignedDownloadUrl = (keyOrUrl: string, expiresIn = 300) =>
+      Effect.gen(function* () {
+        const key = keyOrUrl.startsWith('https://') ? getObjectKeyFromUrl(keyOrUrl) : keyOrUrl;
+
+        yield* Effect.annotateCurrentSpan({
+          's3.bucket': config.bucket,
+          's3.key': key,
+          's3.expiresIn': expiresIn
+        });
+
+        const signedUrl = yield* s3Client.getObject(
+          {
+            Bucket: config.bucket,
+            Key: key
+          },
+          { presigned: true, expiresIn }
+        );
+
+        return signedUrl;
+      }).pipe(
+        Effect.withSpan('S3.createSignedDownloadUrl'),
+        Effect.tapError(error =>
+          Effect.logError('S3 createSignedDownloadUrl failed', { keyOrUrl, error })
+        )
+      );
+
+    // Backwards compatibility alias
+    const createSignedUrl = createSignedUploadUrl;
 
     const copyFile = (sourceKey: string, destKey: string) =>
       Effect.gen(function* () {
@@ -273,6 +302,8 @@ export class S3 extends Effect.Service<S3>()('@app/S3', {
       getBuffer,
       saveFile,
       createSignedUrl,
+      createSignedUploadUrl,
+      createSignedDownloadUrl,
       copyFile,
       listObjects,
       deleteFile,
@@ -285,5 +316,9 @@ export class S3 extends Effect.Service<S3>()('@app/S3', {
   static layer = this.Default;
 
   // Composed layer with all dependencies satisfied
-  static Live = this.layer.pipe(Layer.provide(S3ConfigLive), Layer.provide(S3Client.defaultLayer));
+  // Disable checksums to allow browser uploads with presigned URLs
+  static Live = this.layer.pipe(
+    Layer.provide(S3ConfigLive),
+    Layer.provide(S3Client.layer({ requestChecksumCalculation: 'WHEN_REQUIRED' }))
+  );
 }

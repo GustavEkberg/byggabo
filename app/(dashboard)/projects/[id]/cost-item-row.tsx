@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { CostItem } from '@/lib/services/db/schema';
 import { deleteCostItemAction } from '@/lib/core/cost-item/delete-cost-item-action';
+import { FileLink } from '@/components/ui/file-link';
 import { EditCostItemDialog } from './edit-cost-item-dialog';
 
 type Props = {
@@ -44,14 +45,9 @@ export function CostItemRow({ costItem }: Props) {
         <div className="flex items-center gap-2">
           <span className="font-medium truncate">{costItem.name}</span>
           {costItem.receiptFileUrl && (
-            <a
-              href={costItem.receiptFileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-primary hover:underline"
-            >
+            <FileLink fileUrl={costItem.receiptFileUrl} className="text-xs">
               Receipt
-            </a>
+            </FileLink>
           )}
         </div>
         {costItem.description && (

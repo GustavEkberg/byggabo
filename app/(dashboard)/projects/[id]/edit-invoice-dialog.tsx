@@ -25,6 +25,7 @@ import {
 import { updateInvoiceAction } from '@/lib/core/invoice/update-invoice-action';
 import { createContactAction } from '@/lib/core/contact/create-contact-action';
 import { getUploadUrlAction } from '@/lib/core/file/get-upload-url-action';
+import { FileLink } from '@/components/ui/file-link';
 import type { Contact } from '@/lib/services/db/schema';
 
 type InvoiceWithQuotationAndContact = {
@@ -304,14 +305,9 @@ export function EditInvoiceDialog({ invoice, contacts }: Props) {
             </label>
             {fileUrl && !file ? (
               <div className="flex items-center gap-2">
-                <a
-                  href={fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline"
-                >
+                <FileLink fileUrl={fileUrl} className="text-sm">
                   View current file
-                </a>
+                </FileLink>
                 <Button type="button" variant="ghost" size="xs" onClick={handleRemoveFile}>
                   Remove
                 </Button>

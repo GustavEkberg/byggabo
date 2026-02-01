@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { updateInvoiceAction } from '@/lib/core/invoice/update-invoice-action';
 import { EditInvoiceDialog } from './edit-invoice-dialog';
+import { FileLink } from '@/components/ui/file-link';
 import type { Contact } from '@/lib/services/db/schema';
 
 type InvoiceWithQuotationAndContact = {
@@ -62,14 +63,9 @@ export function InvoiceRow({ invoice, contacts }: Props) {
         <div className="flex items-center gap-2">
           <span className="font-medium truncate">{invoice.description}</span>
           {invoice.fileUrl && (
-            <a
-              href={invoice.fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-primary hover:underline"
-            >
+            <FileLink fileUrl={invoice.fileUrl} className="text-xs">
               PDF
-            </a>
+            </FileLink>
           )}
         </div>
         <div className="flex items-center gap-2 mt-1">

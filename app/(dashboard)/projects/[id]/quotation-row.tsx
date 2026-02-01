@@ -7,6 +7,7 @@ import { updateQuotationAction } from '@/lib/core/quotation/update-quotation-act
 import { convertToInvoiceAction } from '@/lib/core/invoice/convert-to-invoice-action';
 import { EditQuotationDialog } from './edit-quotation-dialog';
 import { Button } from '@/components/ui/button';
+import { FileLink } from '@/components/ui/file-link';
 import {
   Select,
   SelectContent,
@@ -94,14 +95,9 @@ export function QuotationRow({ quotation, contacts, hasInvoice }: Props) {
         <div className="flex items-center gap-2">
           <span className="font-medium truncate">{quotation.description}</span>
           {quotation.fileUrl && (
-            <a
-              href={quotation.fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-primary hover:underline"
-            >
+            <FileLink fileUrl={quotation.fileUrl} className="text-xs">
               PDF
-            </a>
+            </FileLink>
           )}
         </div>
         <div className="flex items-center gap-2 mt-1">
