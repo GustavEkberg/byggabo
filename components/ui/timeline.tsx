@@ -7,13 +7,51 @@ import type { LogItemWithUser, LogItemMentionInfo } from '@/lib/core/log-item/qu
 import type { Contact } from '@/lib/services/db/schema';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { MentionInput } from '@/components/ui/mention-input';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { ContactHoverCard } from '@/components/ui/contact-hover-card';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator
+} from '@/components/ui/dropdown-menu';
 import { addCommentAction } from '@/lib/core/log-item/add-comment-action';
 import { updateLogItemAction } from '@/lib/core/log-item/update-log-item-action';
+import { deleteLogItemAction } from '@/lib/core/log-item/delete-log-item-action';
 
 type ContactSuggestion = Pick<Contact, 'id' | 'name' | 'company'>;
+
+/** Format date as relative time if recent, otherwise as date */
+function formatRelativeTime(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  const isToday = date.toDateString() === now.toDateString();
+  if (isToday) {
+    return `Today ${date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}`;
+  }
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) {
+    return `Yesterday ${date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}`;
+  }
+
+  if (diffDays < 7) {
+    return `${diffDays}d ago`;
+  }
+
+  return date.toLocaleDateString('sv-SE');
+}
 
 /** Extended log item with optional project info for dashboard view */
 export type TimelineItem = LogItemWithUser & {
@@ -217,7 +255,7 @@ export function Timeline({
   const [pending, setPending] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState('');
-  const [editDate, setEditDate] = useState('');
+  const [editDate, setEditDate] = useState<Date | undefined>(undefined);
 
   const filteredItems = filter === 'ALL' ? logItems : logItems.filter(item => item.type === filter);
 
@@ -257,30 +295,24 @@ export function Timeline({
   const startEditing = (item: TimelineItem) => {
     setEditingId(item.id);
     setEditDescription(item.description);
-    // Format as datetime-local value (YYYY-MM-DDTHH:MM)
-    const d = item.createdAt;
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    setEditDate(
-      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-    );
+    setEditDate(item.createdAt);
   };
 
   const cancelEditing = () => {
     setEditingId(null);
     setEditDescription('');
-    setEditDate('');
+    setEditDate(undefined);
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingId || !editDescription.trim()) return;
+    if (!editingId || !editDescription.trim() || !editDate) return;
 
     setPending(true);
-    // Convert datetime-local to ISO string with timezone
     const result = await updateLogItemAction({
       logItemId: editingId,
       description: editDescription.trim(),
-      createdAt: new Date(editDate).toISOString()
+      createdAt: editDate.toISOString()
     });
     setPending(false);
 
@@ -291,6 +323,21 @@ export function Timeline({
 
     toast.success('Updated');
     cancelEditing();
+  };
+
+  const handleDelete = async (logItemId: string) => {
+    if (!confirm('Delete this item?')) return;
+
+    setPending(true);
+    const result = await deleteLogItemAction({ logItemId });
+    setPending(false);
+
+    if (result._tag === 'Error') {
+      toast.error(result.message);
+      return;
+    }
+
+    toast.success('Deleted');
   };
 
   const canEdit = (item: TimelineItem) => item.createdBy?.id === currentUserId;
@@ -379,11 +426,7 @@ export function Timeline({
                     maxLength={2000}
                     rows={2}
                   />
-                  <Input
-                    type="datetime-local"
-                    value={editDate}
-                    onChange={e => setEditDate(e.target.value)}
-                  />
+                  <DateTimePicker value={editDate} onChange={setEditDate} />
                   <div className="flex gap-2 justify-end">
                     <Button
                       type="button"
@@ -401,60 +444,65 @@ export function Timeline({
                 </form>
               ) : (
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm">
-                    {showProjectName && item.project && (
-                      <>
-                        <Link
-                          href={`/projects/${item.projectId}`}
-                          className="font-medium hover:underline"
-                        >
-                          {item.project.name}
-                        </Link>
-                        <span className="mx-1.5 text-muted-foreground/50">&middot;</span>
-                      </>
-                    )}
-                    <span className={showProjectName ? 'text-muted-foreground' : 'font-medium'}>
-                      {getTypeLabel(item.type)}
-                    </span>
-                    {item.createdBy && (
-                      <>
-                        <span className="mx-1.5 text-muted-foreground/50">&middot;</span>
-                        <span className="text-muted-foreground">{item.createdBy.name}</span>
-                      </>
-                    )}
-                    <span className="mx-1.5 text-muted-foreground/50">&middot;</span>
-                    <span className="text-muted-foreground">
-                      {item.createdAt.toLocaleDateString('sv-SE')}{' '}
-                      {item.createdAt.toLocaleTimeString('sv-SE', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
-                    {canEdit(item) && (
-                      <button
-                        type="button"
-                        onClick={() => startEditing(item)}
-                        className="ml-2 text-muted-foreground hover:text-foreground"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                          <path d="m15 5 4 4" />
-                        </svg>
-                      </button>
-                    )}
-                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-sm min-w-0">
+                      {showProjectName && item.project && (
+                        <>
+                          <Link
+                            href={`/projects/${item.projectId}`}
+                            className="font-medium hover:underline truncate"
+                          >
+                            {item.project.name}
+                          </Link>
+                          <span className="text-muted-foreground/50">&middot;</span>
+                        </>
+                      )}
+                      <span className={showProjectName ? 'text-muted-foreground' : 'font-medium'}>
+                        {getTypeLabel(item.type)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className="text-xs text-muted-foreground">
+                        {item.createdBy && `${item.createdBy.name} · `}
+                        {formatRelativeTime(item.createdAt)}
+                      </span>
+                      {canEdit(item) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="p-1 -m-1 text-muted-foreground hover:text-foreground rounded">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <circle cx="12" cy="12" r="1" />
+                              <circle cx="12" cy="5" r="1" />
+                              <circle cx="12" cy="19" r="1" />
+                            </svg>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => startEditing(item)}>
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  </div>
                   <p
-                    className={`text-sm text-muted-foreground whitespace-pre-wrap ${showProjectName ? 'line-clamp-2' : ''}`}
+                    className={`text-sm text-muted-foreground mt-1 whitespace-pre-wrap ${showProjectName ? 'line-clamp-2' : ''}`}
                   >
                     {renderDescriptionWithMentions(item.description, item.mentions)}
                   </p>

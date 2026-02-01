@@ -10,18 +10,16 @@ import * as schema from '@/lib/services/db/schema';
 import { eq } from 'drizzle-orm';
 import { ValidationError, NotFoundError, UnauthorizedError } from '@/lib/core/errors';
 
-const UpdateLogItemInput = S.Struct({
-  logItemId: S.String.pipe(S.minLength(1)),
-  description: S.optional(S.String.pipe(S.minLength(1), S.maxLength(2000))),
-  createdAt: S.optional(S.String)
+const DeleteLogItemInput = S.Struct({
+  logItemId: S.String.pipe(S.minLength(1))
 });
 
-type UpdateLogItemInput = S.Schema.Type<typeof UpdateLogItemInput>;
+type DeleteLogItemInput = S.Schema.Type<typeof DeleteLogItemInput>;
 
-export const updateLogItemAction = async (input: UpdateLogItemInput) => {
+export const deleteLogItemAction = async (input: DeleteLogItemInput) => {
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const parsed = yield* S.decodeUnknown(UpdateLogItemInput)(input).pipe(
+      const parsed = yield* S.decodeUnknown(DeleteLogItemInput)(input).pipe(
         Effect.mapError(
           () =>
             new ValidationError({
@@ -56,10 +54,10 @@ export const updateLogItemAction = async (input: UpdateLogItemInput) => {
         });
       }
 
-      // Only allow editing own log items
+      // Only allow deleting own log items
       if (existing.logItem.createdById !== user.id) {
         return yield* new UnauthorizedError({
-          message: 'You can only edit your own log items'
+          message: 'You can only delete your own log items'
         });
       }
 
@@ -68,25 +66,18 @@ export const updateLogItemAction = async (input: UpdateLogItemInput) => {
         'logItem.id': parsed.logItemId
       });
 
-      // Build update object
-      const updateData: Partial<schema.InsertLogItem> = {};
-      if (parsed.description !== undefined) updateData.description = parsed.description;
-      if (parsed.createdAt !== undefined) updateData.createdAt = new Date(parsed.createdAt);
+      // Delete mentions first (cascade should handle this, but be explicit)
+      yield* db
+        .delete(schema.logItemMention)
+        .where(eq(schema.logItemMention.logItemId, parsed.logItemId));
 
-      if (Object.keys(updateData).length === 0) {
-        return existing.logItem;
-      }
+      // Delete the log item
+      yield* db.delete(schema.logItem).where(eq(schema.logItem.id, parsed.logItemId));
 
-      const [logItem] = yield* db
-        .update(schema.logItem)
-        .set(updateData)
-        .where(eq(schema.logItem.id, parsed.logItemId))
-        .returning();
-
-      return logItem;
+      return { projectId: existing.logItem.projectId };
     }).pipe(
-      Effect.withSpan('action.logItem.update', {
-        attributes: { operation: 'logItem.update' }
+      Effect.withSpan('action.logItem.delete', {
+        attributes: { operation: 'logItem.delete' }
       }),
       Effect.provide(AppLayer),
       Effect.scoped,
@@ -116,15 +107,15 @@ export const updateLogItemAction = async (input: UpdateLogItemInput) => {
             Match.orElse(() =>
               Effect.succeed({
                 _tag: 'Error' as const,
-                message: 'Failed to update log item'
+                message: 'Failed to delete log item'
               })
             )
           ),
-        onSuccess: logItem =>
+        onSuccess: ({ projectId }) =>
           Effect.sync(() => {
-            revalidatePath(`/projects/${logItem.projectId}`);
+            revalidatePath(`/projects/${projectId}`);
             revalidatePath('/projects');
-            return { _tag: 'Success' as const, logItem };
+            return { _tag: 'Success' as const };
           })
       })
     )
