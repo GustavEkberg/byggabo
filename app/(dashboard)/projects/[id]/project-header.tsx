@@ -16,16 +16,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
-import type { Project, PropertySection } from '@/lib/services/db/schema';
+import type { Contact, Project, PropertySection } from '@/lib/services/db/schema';
 import { archiveProjectAction } from '@/lib/core/project/archive-project-action';
 import { EditProjectDialog } from './edit-project-dialog';
+import { LinkContactDialog } from './link-contact-dialog';
 
 type Props = {
   project: Project;
   sections: PropertySection[];
+  contacts: Contact[];
+  linkedContactIds: string[];
 };
 
-export function ProjectHeader({ project, sections }: Props) {
+export function ProjectHeader({ project, sections, contacts, linkedContactIds }: Props) {
   const router = useRouter();
   const [archiving, setArchiving] = useState(false);
   const section = project.sectionId ? sections.find(s => s.id === project.sectionId) : null;
@@ -58,6 +61,11 @@ export function ProjectHeader({ project, sections }: Props) {
         </p>
       </div>
       <div className="flex items-center gap-2">
+        <LinkContactDialog
+          project={project}
+          contacts={contacts}
+          linkedContactIds={linkedContactIds}
+        />
         <EditProjectDialog project={project} sections={sections} />
         <AlertDialog>
           <AlertDialogTrigger render={<Button variant="destructive" />}>Archive</AlertDialogTrigger>

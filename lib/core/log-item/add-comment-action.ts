@@ -97,6 +97,27 @@ export const addCommentAction = async (input: AddCommentInput) => {
             contactId
           }))
         );
+
+        // Auto-link mentioned contacts to project (ignore conflicts)
+        for (const contactId of mentionedContactIds) {
+          const [existing] = yield* db
+            .select({ id: schema.projectContact.id })
+            .from(schema.projectContact)
+            .where(
+              and(
+                eq(schema.projectContact.projectId, parsed.projectId),
+                eq(schema.projectContact.contactId, contactId)
+              )
+            )
+            .limit(1);
+
+          if (!existing) {
+            yield* db.insert(schema.projectContact).values({
+              projectId: parsed.projectId,
+              contactId
+            });
+          }
+        }
       }
 
       return logItem;

@@ -11,12 +11,14 @@ import { getContacts } from '@/lib/core/contact/queries';
 import { getLogItems } from '@/lib/core/log-item/queries';
 import { getInvoices } from '@/lib/core/invoice/queries';
 import { getSections } from '@/lib/core/property-section/queries';
+import { getProjectContacts } from '@/lib/core/project-contact/queries';
 import { ProjectHeader } from './project-header';
 import { FinancialSummary } from './financial-summary';
 import { CostItemList } from './cost-item-list';
 import { QuotationList } from './quotation-list';
 import { InvoiceList } from './invoice-list';
 import { Timeline } from './timeline';
+import { ProjectContacts } from './project-contacts';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,20 +32,36 @@ async function Content({ projectId }: { projectId: string }) {
   return await NextEffect.runPromise(
     Effect.gen(function* () {
       const { user } = yield* getSessionWithProperty();
-      const [project, costItems, quotations, invoices, contacts, logItems, sections] =
-        yield* Effect.all([
-          getProject(projectId),
-          getCostItems(projectId),
-          getQuotations(projectId),
-          getInvoices(projectId),
-          getContacts(),
-          getLogItems(projectId),
-          getSections()
-        ]);
+      const [
+        project,
+        costItems,
+        quotations,
+        invoices,
+        contacts,
+        logItems,
+        sections,
+        linkedContacts
+      ] = yield* Effect.all([
+        getProject(projectId),
+        getCostItems(projectId),
+        getQuotations(projectId),
+        getInvoices(projectId),
+        getContacts(),
+        getLogItems(projectId),
+        getSections(),
+        getProjectContacts(projectId)
+      ]);
+
+      const linkedContactIds = linkedContacts.map(c => c.id);
 
       return (
         <div className="mx-auto max-w-6xl px-4 py-8">
-          <ProjectHeader project={project} sections={sections} />
+          <ProjectHeader
+            project={project}
+            sections={sections}
+            contacts={contacts}
+            linkedContactIds={linkedContactIds}
+          />
 
           <div className="mt-6">
             <FinancialSummary costItems={costItems} quotations={quotations} invoices={invoices} />
@@ -65,13 +83,16 @@ async function Content({ projectId }: { projectId: string }) {
                 contacts={contacts}
               />
             </div>
-            <Timeline
-              projectId={projectId}
-              logItems={logItems}
-              currentUserId={user.id}
-              contacts={contacts}
-              allowAddComment
-            />
+            <div className="space-y-6">
+              <ProjectContacts project={project} linkedContacts={linkedContacts} />
+              <Timeline
+                projectId={projectId}
+                logItems={logItems}
+                currentUserId={user.id}
+                contacts={contacts}
+                allowAddComment
+              />
+            </div>
           </div>
         </div>
       );

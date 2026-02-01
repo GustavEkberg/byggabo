@@ -102,6 +102,27 @@ export const createQuotationAction = async (input: CreateQuotationInput) => {
         description: `Received quotation: ${parsed.description.slice(0, 50)}${parsed.description.length > 50 ? '...' : ''} - ${parsed.amount} kr`
       });
 
+      // Auto-link contact to project if provided
+      if (parsed.contactId) {
+        const [existingLink] = yield* db
+          .select({ id: schema.projectContact.id })
+          .from(schema.projectContact)
+          .where(
+            and(
+              eq(schema.projectContact.projectId, parsed.projectId),
+              eq(schema.projectContact.contactId, parsed.contactId)
+            )
+          )
+          .limit(1);
+
+        if (!existingLink) {
+          yield* db.insert(schema.projectContact).values({
+            projectId: parsed.projectId,
+            contactId: parsed.contactId
+          });
+        }
+      }
+
       return quotation;
     }).pipe(
       Effect.withSpan('action.quotation.create', {

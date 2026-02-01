@@ -7,7 +7,7 @@ import { NextEffect } from '@/lib/next-effect';
 import { getSessionWithProperty } from '@/lib/services/auth/get-session';
 import { Db } from '@/lib/services/db/live-layer';
 import * as schema from '@/lib/services/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '@/lib/core/errors';
 
 const CreateInvoiceInput = S.Struct({
@@ -126,6 +126,27 @@ export const createInvoiceAction = async (input: CreateInvoiceInput) => {
         referenceId: invoice.id,
         description: logDescription
       });
+
+      // Auto-link contact to project if provided
+      if (parsed.contactId) {
+        const [existingLink] = yield* db
+          .select({ id: schema.projectContact.id })
+          .from(schema.projectContact)
+          .where(
+            and(
+              eq(schema.projectContact.projectId, parsed.projectId),
+              eq(schema.projectContact.contactId, parsed.contactId)
+            )
+          )
+          .limit(1);
+
+        if (!existingLink) {
+          yield* db.insert(schema.projectContact).values({
+            projectId: parsed.projectId,
+            contactId: parsed.contactId
+          });
+        }
+      }
 
       return invoice;
     }).pipe(

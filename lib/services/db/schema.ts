@@ -286,6 +286,25 @@ export type LogItemMention = typeof logItemMention.$inferSelect;
 export type InsertLogItemMention = typeof logItemMention.$inferInsert;
 
 ////////////////////////////////////////////////////////////////////////
+// PROJECT CONTACT - Link contacts to projects
+////////////////////////////////////////////////////////////////////////
+export const projectContact = pgTable('projectContact', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  projectId: text('projectId')
+    .notNull()
+    .references(() => project.id, { onDelete: 'cascade' }),
+  contactId: text('contactId')
+    .notNull()
+    .references(() => contact.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('createdAt').notNull().defaultNow()
+});
+
+export type ProjectContact = typeof projectContact.$inferSelect;
+export type InsertProjectContact = typeof projectContact.$inferInsert;
+
+////////////////////////////////////////////////////////////////////////
 // PROPERTY INVITE - Invite new users to join a property
 ////////////////////////////////////////////////////////////////////////
 export const propertyInvite = pgTable('propertyInvite', {
@@ -322,6 +341,7 @@ export const relations = defineRelations(
     verification,
     project,
     contact,
+    projectContact,
     costItem,
     quotation,
     invoice,
@@ -406,6 +426,10 @@ export const relations = defineRelations(
       logItems: r.many.logItem({
         from: r.project.id,
         to: r.logItem.projectId
+      }),
+      projectContacts: r.many.projectContact({
+        from: r.project.id,
+        to: r.projectContact.projectId
       })
     },
     contact: {
@@ -421,6 +445,22 @@ export const relations = defineRelations(
       invoices: r.many.invoice({
         from: r.contact.id,
         to: r.invoice.contactId
+      }),
+      projectContacts: r.many.projectContact({
+        from: r.contact.id,
+        to: r.projectContact.contactId
+      })
+    },
+    projectContact: {
+      project: r.one.project({
+        from: r.projectContact.projectId,
+        to: r.project.id,
+        optional: false
+      }),
+      contact: r.one.contact({
+        from: r.projectContact.contactId,
+        to: r.contact.id,
+        optional: false
       })
     },
     costItem: {
