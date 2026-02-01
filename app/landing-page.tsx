@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   FolderKanban,
   ClipboardList,
@@ -36,6 +36,109 @@ import {
 } from '@/components/ui/dialog';
 import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card';
 import { sendRequestAccessAction } from '@/lib/core/contact/send-request-access-action';
+
+// Interactive architectural grid background
+function ArchitecturalGrid() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const squaresRef = useRef<HTMLDivElement[]>([]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const spacing = 80;
+    const threshold = 250;
+
+    function createGrid() {
+      if (!container) return;
+      container.innerHTML = '';
+      squaresRef.current = [];
+
+      const cols = Math.ceil(window.innerWidth / spacing) + 1;
+      const rows = Math.ceil(window.innerHeight / spacing) + 1;
+
+      for (let i = 0; i < cols; i++) {
+        for (let j = 0; j < rows; j++) {
+          // Only create ~25% of squares for sparse effect
+          if (Math.random() > 0.75) {
+            const sq = document.createElement('div');
+            sq.className = 'landing-grid-square';
+            sq.style.left = `${i * spacing - 16}px`;
+            sq.style.top = `${j * spacing - 16}px`;
+            container.appendChild(sq);
+            squaresRef.current.push(sq);
+          }
+        }
+      }
+    }
+
+    function handleMouseMove(e: MouseEvent) {
+      const mouseX = e.clientX;
+      const mouseY = e.clientY;
+
+      squaresRef.current.forEach(sq => {
+        const rect = sq.getBoundingClientRect();
+        const centerX = rect.left + 16;
+        const centerY = rect.top + 16;
+
+        const distance = Math.sqrt(Math.pow(mouseX - centerX, 2) + Math.pow(mouseY - centerY, 2));
+
+        if (distance < threshold) {
+          const strength = 1 - distance / threshold;
+          sq.style.opacity = String(strength * 0.7);
+          sq.style.transform = `scale(${0.8 + strength * 0.2})`;
+        } else {
+          sq.style.opacity = '0';
+          sq.style.transform = 'scale(0.8)';
+        }
+      });
+    }
+
+    createGrid();
+    window.addEventListener('resize', createGrid);
+    window.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      window.removeEventListener('resize', createGrid);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
+  return (
+    <>
+      {/* Base grid lines */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px)',
+          backgroundSize: '80px 80px'
+        }}
+      />
+      {/* Interactive squares */}
+      <div ref={containerRef} className="fixed inset-0 z-0 pointer-events-none" />
+      {/* Global styles for squares */}
+      <style jsx global>{`
+        .landing-grid-square {
+          position: absolute;
+          width: 32px;
+          height: 32px;
+          border: 1px solid rgba(0, 0, 0, 0.3);
+          background-color: rgba(0, 0, 0, 0.03);
+          opacity: 0;
+          transition:
+            opacity 0.6s ease-out,
+            transform 0.6s ease-out;
+          pointer-events: none;
+        }
+        .dark .landing-grid-square {
+          border-color: rgba(255, 255, 255, 0.2);
+          background-color: rgba(255, 255, 255, 0.03);
+        }
+      `}</style>
+    </>
+  );
+}
 
 // Mock project data for demo (single featured project with financial details)
 type MockProject = {
@@ -875,7 +978,8 @@ export function LandingPage({ isSweden = false }: LandingPageProps) {
   const contacts = isSweden ? MOCK_CONTACTS_SE : MOCK_CONTACTS_EU;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      <ArchitecturalGrid />
       <Header />
 
       {/* Hero */}
