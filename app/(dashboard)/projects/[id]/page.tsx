@@ -53,7 +53,12 @@ async function Content({ projectId }: { projectId: string }) {
                 invoices={invoices}
                 contacts={contacts}
               />
-              <InvoiceList invoices={invoices} />
+              <InvoiceList
+                projectId={projectId}
+                invoices={invoices}
+                quotations={quotations}
+                contacts={contacts}
+              />
             </div>
             <Timeline projectId={projectId} logItems={logItems} />
           </div>

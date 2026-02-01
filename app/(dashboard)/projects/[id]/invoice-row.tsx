@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { updateInvoiceAction } from '@/lib/core/invoice/update-invoice-action';
 import { EditInvoiceDialog } from './edit-invoice-dialog';
+import type { Contact } from '@/lib/services/db/schema';
 
-type InvoiceWithQuotation = {
+type InvoiceWithQuotationAndContact = {
   id: string;
   projectId: string;
   quotationId: string | null;
+  contactId: string | null;
   description: string;
   amount: string;
   invoiceDate: Date;
@@ -21,13 +23,19 @@ type InvoiceWithQuotation = {
     description: string;
     contactId: string | null;
   } | null;
+  contact: {
+    id: string;
+    name: string;
+    company: string | null;
+  } | null;
 };
 
 type Props = {
-  invoice: InvoiceWithQuotation;
+  invoice: InvoiceWithQuotationAndContact;
+  contacts: Contact[];
 };
 
-export function InvoiceRow({ invoice }: Props) {
+export function InvoiceRow({ invoice, contacts }: Props) {
   const [updating, setUpdating] = useState(false);
 
   const handlePaidChange = async (isPaid: boolean) => {
@@ -65,6 +73,11 @@ export function InvoiceRow({ invoice }: Props) {
           )}
         </div>
         <div className="flex items-center gap-2 mt-1">
+          {invoice.contact && (
+            <span className="text-xs text-muted-foreground">
+              {invoice.contact.company ?? invoice.contact.name}
+            </span>
+          )}
           <span className="text-xs text-muted-foreground/60">
             {invoice.invoiceDate.toLocaleDateString('sv-SE')}
           </span>
@@ -98,7 +111,7 @@ export function InvoiceRow({ invoice }: Props) {
           </span>
         </label>
 
-        <EditInvoiceDialog invoice={invoice} />
+        <EditInvoiceDialog invoice={invoice} contacts={contacts} />
       </div>
     </div>
   );

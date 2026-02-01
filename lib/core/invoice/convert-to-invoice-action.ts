@@ -92,6 +92,7 @@ export const convertToInvoiceAction = async (input: ConvertToInvoiceInput) => {
         .values({
           projectId: quotation.projectId,
           quotationId: quotation.id,
+          contactId: quotation.contactId,
           description: quotation.description,
           amount: quotation.amount,
           invoiceDate: parsed.invoiceDate ?? new Date(),

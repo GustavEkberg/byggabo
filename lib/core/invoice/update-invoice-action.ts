@@ -16,7 +16,8 @@ const UpdateInvoiceInput = S.Struct({
   amount: S.optional(S.String.pipe(S.minLength(1))),
   invoiceDate: S.optional(S.Date),
   isPaid: S.optional(S.Boolean),
-  fileUrl: S.optional(S.NullOr(S.String))
+  fileUrl: S.optional(S.NullOr(S.String)),
+  contactId: S.optional(S.NullOr(S.String))
 });
 
 type UpdateInvoiceInput = S.Schema.Type<typeof UpdateInvoiceInput>;
@@ -71,6 +72,7 @@ export const updateInvoiceAction = async (input: UpdateInvoiceInput) => {
       if (parsed.invoiceDate !== undefined) updateData.invoiceDate = parsed.invoiceDate;
       if (parsed.isPaid !== undefined) updateData.isPaid = parsed.isPaid;
       if (parsed.fileUrl !== undefined) updateData.fileUrl = parsed.fileUrl;
+      if (parsed.contactId !== undefined) updateData.contactId = parsed.contactId;
 
       const [invoice] = yield* db
         .update(schema.invoice)

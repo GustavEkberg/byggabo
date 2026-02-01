@@ -36,16 +36,23 @@ export const getInvoices = (projectId: string) =>
           id: schema.quotation.id,
           description: schema.quotation.description,
           contactId: schema.quotation.contactId
+        },
+        contact: {
+          id: schema.contact.id,
+          name: schema.contact.name,
+          company: schema.contact.company
         }
       })
       .from(schema.invoice)
       .leftJoin(schema.quotation, eq(schema.invoice.quotationId, schema.quotation.id))
+      .leftJoin(schema.contact, eq(schema.invoice.contactId, schema.contact.id))
       .where(eq(schema.invoice.projectId, projectId))
       .orderBy(desc(schema.invoice.invoiceDate));
 
     return invoices.map(row => ({
       ...row.invoice,
-      quotation: row.quotation
+      quotation: row.quotation,
+      contact: row.contact
     }));
   }).pipe(Effect.withSpan('Invoice.getAll'));
 
@@ -69,11 +76,17 @@ export const getInvoice = (invoiceId: string) =>
           id: schema.quotation.id,
           description: schema.quotation.description,
           contactId: schema.quotation.contactId
+        },
+        contact: {
+          id: schema.contact.id,
+          name: schema.contact.name,
+          company: schema.contact.company
         }
       })
       .from(schema.invoice)
       .innerJoin(schema.project, eq(schema.invoice.projectId, schema.project.id))
       .leftJoin(schema.quotation, eq(schema.invoice.quotationId, schema.quotation.id))
+      .leftJoin(schema.contact, eq(schema.invoice.contactId, schema.contact.id))
       .where(eq(schema.invoice.id, invoiceId))
       .limit(1);
 
@@ -87,6 +100,7 @@ export const getInvoice = (invoiceId: string) =>
 
     return {
       ...result.invoice,
-      quotation: result.quotation
+      quotation: result.quotation,
+      contact: result.contact
     };
   }).pipe(Effect.withSpan('Invoice.getById'));

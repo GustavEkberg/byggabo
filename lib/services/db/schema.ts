@@ -182,6 +182,7 @@ export const invoice = pgTable('invoice', {
     .notNull()
     .references(() => project.id, { onDelete: 'cascade' }),
   quotationId: text('quotationId').references(() => quotation.id, { onDelete: 'set null' }),
+  contactId: text('contactId').references(() => contact.id, { onDelete: 'set null' }),
   description: text('description').notNull(),
   amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
   invoiceDate: timestamp('invoiceDate').notNull().defaultNow(),
@@ -274,6 +275,10 @@ export const relations = defineRelations(
       quotations: r.many.quotation({
         from: r.contact.id,
         to: r.quotation.contactId
+      }),
+      invoices: r.many.invoice({
+        from: r.contact.id,
+        to: r.invoice.contactId
       })
     },
     costItem: {
@@ -309,6 +314,11 @@ export const relations = defineRelations(
       quotation: r.one.quotation({
         from: r.invoice.quotationId,
         to: r.quotation.id,
+        optional: true
+      }),
+      contact: r.one.contact({
+        from: r.invoice.contactId,
+        to: r.contact.id,
         optional: true
       })
     },

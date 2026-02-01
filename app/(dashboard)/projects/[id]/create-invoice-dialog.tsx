@@ -14,48 +14,32 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { updateInvoiceAction } from '@/lib/core/invoice/update-invoice-action';
+import { createInvoiceAction } from '@/lib/core/invoice/create-invoice-action';
 import { createContactAction } from '@/lib/core/contact/create-contact-action';
 import { getUploadUrlAction } from '@/lib/core/file/get-upload-url-action';
 import type { Contact } from '@/lib/services/db/schema';
 
-type InvoiceWithQuotationAndContact = {
+type AcceptedQuotation = {
   id: string;
-  projectId: string;
-  quotationId: string | null;
-  contactId: string | null;
   description: string;
   amount: string;
-  invoiceDate: Date;
-  isPaid: boolean;
-  fileUrl: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  quotation: {
-    id: string;
-    description: string;
-    contactId: string | null;
-  } | null;
-  contact: {
-    id: string;
-    name: string;
-    company: string | null;
-  } | null;
+  contactId: string | null;
 };
 
 type Props = {
-  invoice: InvoiceWithQuotationAndContact;
+  projectId: string;
+  acceptedQuotations: AcceptedQuotation[];
   contacts: Contact[];
 };
 
-export function EditInvoiceDialog({ invoice, contacts }: Props) {
+export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }: Props) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
-  const [description, setDescription] = useState(invoice.description);
-  const [amount, setAmount] = useState(invoice.amount);
-  const [invoiceDate, setInvoiceDate] = useState(invoice.invoiceDate.toISOString().split('T')[0]);
-  const [contactId, setContactId] = useState<string>(invoice.contactId ?? '');
-  const [fileUrl, setFileUrl] = useState(invoice.fileUrl);
+  const [description, setDescription] = useState('');
+  const [amount, setAmount] = useState('');
+  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [quotationId, setQuotationId] = useState<string | null>(null);
+  const [contactId, setContactId] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -65,6 +49,24 @@ export function EditInvoiceDialog({ invoice, contacts }: Props) {
   const [newContactCompany, setNewContactCompany] = useState('');
   const [newContactEmail, setNewContactEmail] = useState('');
   const [newContactPhone, setNewContactPhone] = useState('');
+
+  const handleQuotationChange = (value: string) => {
+    if (value === '') {
+      setQuotationId(null);
+      return;
+    }
+    setQuotationId(value);
+    const quotation = acceptedQuotations.find(q => q.id === value);
+    if (quotation) {
+      setDescription(quotation.description);
+      setAmount(quotation.amount);
+      // Also set contact if quotation has one
+      if (quotation.contactId) {
+        setContactId(quotation.contactId);
+        setShowNewContact(false);
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,9 +92,9 @@ export function EditInvoiceDialog({ invoice, contacts }: Props) {
       finalContactId = contactResult.contact.id;
     }
 
-    let finalFileUrl = fileUrl;
+    let fileUrl: string | null = null;
 
-    // Upload new file if provided
+    // Upload file if provided
     if (file) {
       const uploadResult = await getUploadUrlAction({
         fileName: file.name,
@@ -119,15 +121,16 @@ export function EditInvoiceDialog({ invoice, contacts }: Props) {
         return;
       }
 
-      finalFileUrl = uploadResult.publicUrl;
+      fileUrl = uploadResult.publicUrl;
     }
 
-    const result = await updateInvoiceAction({
-      invoiceId: invoice.id,
+    const result = await createInvoiceAction({
+      projectId,
       description,
       amount,
       invoiceDate: new Date(invoiceDate),
-      fileUrl: finalFileUrl,
+      fileUrl,
+      quotationId,
       contactId: finalContactId
     });
 
@@ -138,76 +141,100 @@ export function EditInvoiceDialog({ invoice, contacts }: Props) {
       return;
     }
 
-    toast.success('Invoice updated');
+    toast.success('Invoice created');
     setOpen(false);
+    resetForm();
   };
 
-  const handleRemoveFile = () => {
-    setFileUrl(null);
+  const resetForm = () => {
+    setDescription('');
+    setAmount('');
+    setInvoiceDate(new Date().toISOString().split('T')[0]);
+    setQuotationId(null);
+    setContactId('');
     setFile(null);
+    setShowNewContact(false);
+    setNewContactName('');
+    setNewContactCompany('');
+    setNewContactEmail('');
+    setNewContactPhone('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="icon-xs" />}>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="text-muted-foreground"
-        >
-          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-          <path d="m15 5 4 4" />
-        </svg>
-      </DialogTrigger>
+    <Dialog
+      open={open}
+      onOpenChange={isOpen => {
+        setOpen(isOpen);
+        if (!isOpen) resetForm();
+      }}
+    >
+      <DialogTrigger render={<Button variant="outline" size="sm" />}>Add Invoice</DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Invoice</DialogTitle>
-          <DialogDescription>Update the details of this invoice.</DialogDescription>
+          <DialogTitle>Create Invoice</DialogTitle>
+          <DialogDescription>
+            Add a new invoice. Optionally link it to an accepted quotation.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4">
+          {acceptedQuotations.length > 0 && (
+            <div className="grid gap-2">
+              <label htmlFor="create-quotation" className="text-sm font-medium">
+                Link to Quotation (optional)
+              </label>
+              <select
+                id="create-quotation"
+                value={quotationId ?? ''}
+                onChange={e => handleQuotationChange(e.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">No quotation (standalone)</option>
+                {acceptedQuotations.map(q => (
+                  <option key={q.id} value={q.id}>
+                    {q.description} - {parseFloat(q.amount).toLocaleString('sv-SE')} kr
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="grid gap-2">
-            <label htmlFor="edit-description" className="text-sm font-medium">
+            <label htmlFor="create-description" className="text-sm font-medium">
               Description
             </label>
             <Input
-              id="edit-description"
+              id="create-description"
               value={description}
               onChange={e => setDescription(e.target.value)}
+              placeholder="Invoice description"
               required
               maxLength={2000}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <label htmlFor="edit-amount" className="text-sm font-medium">
+              <label htmlFor="create-amount" className="text-sm font-medium">
                 Amount (kr)
               </label>
               <Input
-                id="edit-amount"
+                id="create-amount"
                 type="number"
                 step="0.01"
                 min="0"
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
+                placeholder="0.00"
                 required
               />
             </div>
             <div className="grid gap-2">
-              <label htmlFor="edit-invoice-date" className="text-sm font-medium">
+              <label htmlFor="create-invoice-date" className="text-sm font-medium">
                 Invoice Date
               </label>
               <Input
-                id="edit-invoice-date"
+                id="create-invoice-date"
                 type="date"
                 value={invoiceDate}
                 onChange={e => setInvoiceDate(e.target.value)}
@@ -215,10 +242,9 @@ export function EditInvoiceDialog({ invoice, contacts }: Props) {
               />
             </div>
           </div>
-
           <div className="grid gap-2">
             <div className="flex items-center justify-between">
-              <label htmlFor="edit-contact" className="text-sm font-medium">
+              <label htmlFor="create-contact" className="text-sm font-medium">
                 Contractor
               </label>
               {!showNewContact && (
@@ -280,7 +306,7 @@ export function EditInvoiceDialog({ invoice, contacts }: Props) {
               </div>
             ) : (
               <select
-                id="edit-contact"
+                id="create-contact"
                 value={contactId}
                 onChange={e => setContactId(e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -296,27 +322,12 @@ export function EditInvoiceDialog({ invoice, contacts }: Props) {
           </div>
 
           <div className="grid gap-2">
-            <label htmlFor="edit-invoice-file" className="text-sm font-medium">
-              Invoice PDF
+            <label htmlFor="create-invoice-file" className="text-sm font-medium">
+              Invoice PDF (optional)
             </label>
-            {fileUrl && !file ? (
-              <div className="flex items-center gap-2">
-                <a
-                  href={fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline"
-                >
-                  View current file
-                </a>
-                <Button type="button" variant="ghost" size="xs" onClick={handleRemoveFile}>
-                  Remove
-                </Button>
-              </div>
-            ) : null}
             <Input
               ref={fileInputRef}
-              id="edit-invoice-file"
+              id="create-invoice-file"
               type="file"
               accept="image/*,.pdf"
               onChange={e => setFile(e.target.files?.[0] ?? null)}
@@ -333,7 +344,7 @@ export function EditInvoiceDialog({ invoice, contacts }: Props) {
                 (showNewContact && !newContactName.trim())
               }
             >
-              {pending ? 'Saving...' : 'Save'}
+              {pending ? 'Creating...' : 'Create'}
             </Button>
           </DialogFooter>
         </form>
