@@ -16,16 +16,22 @@ type Props = {
 };
 
 /**
- * Financial summary showing estimated vs actual spending.
+ * Financial summary showing quote range, committed, and actual spending.
  *
- * - Estimated: sum of ACCEPTED quotations
+ * - Quote Range: min–max of PENDING quotations (for decision-making)
+ * - Committed: sum of ACCEPTED quotations (locked-in budget)
  * - Actual: sum of cost items + invoices
- * - Progress bar shows actual/estimated ratio
- * - Green when under budget, red when over
  */
 export function FinancialSummary({ costItems, quotations, invoices }: Props) {
-  // Calculate estimated total (sum of accepted quotations)
-  const estimated = quotations
+  // Calculate quote range from pending quotations
+  const pendingQuotations = quotations.filter(q => q.status === 'PENDING');
+  const hasPending = pendingQuotations.length > 0;
+  const pendingAmounts = pendingQuotations.map(q => parseFloat(q.amount));
+  const quoteRangeMin = hasPending ? Math.min(...pendingAmounts) : 0;
+  const quoteRangeMax = hasPending ? Math.max(...pendingAmounts) : 0;
+
+  // Calculate committed total (sum of accepted quotations)
+  const committed = quotations
     .filter(q => q.status === 'ACCEPTED')
     .reduce((sum, q) => sum + parseFloat(q.amount), 0);
 
@@ -34,26 +40,37 @@ export function FinancialSummary({ costItems, quotations, invoices }: Props) {
   const invoicesTotal = invoices.reduce((sum, i) => sum + parseFloat(i.amount), 0);
   const actual = costItemsTotal + invoicesTotal;
 
-  // Calculate percentage (capped at 100% for display, but we show actual value)
-  const percentage = estimated > 0 ? (actual / estimated) * 100 : 0;
-  const displayPercentage = Math.min(percentage, 100);
+  // Determine if over budget (only relevant if there's committed budget)
+  const isOverBudget = actual > committed && committed > 0;
 
-  // Determine if over budget
-  const isOverBudget = actual > estimated && estimated > 0;
-  const hasEstimate = estimated > 0;
-
-  // Calculate remaining or overspent
-  const difference = estimated - actual;
+  // Format quote range display
+  const formatQuoteRange = () => {
+    if (quoteRangeMin === quoteRangeMax) {
+      return formatSEK(quoteRangeMin);
+    }
+    return `${formatSEK(quoteRangeMin)} – ${formatSEK(quoteRangeMax)}`;
+  };
 
   return (
     <div className="rounded-xl border bg-card p-6">
       <h2 className="text-lg font-medium mb-4">Budget Overview</h2>
 
       <div className="space-y-4">
-        {/* Estimated */}
+        {/* Quote Range - only shown if pending quotations exist */}
+        {hasPending && (
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">
+              Quote Range{' '}
+              <span className="text-muted-foreground/60">({pendingQuotations.length} pending)</span>
+            </span>
+            <span className="font-medium">{formatQuoteRange()}</span>
+          </div>
+        )}
+
+        {/* Committed */}
         <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Estimated</span>
-          <span className="font-medium">{formatSEK(estimated)}</span>
+          <span className="text-muted-foreground">Committed</span>
+          <span className="font-medium">{formatSEK(committed)}</span>
         </div>
 
         {/* Actual */}
@@ -63,28 +80,6 @@ export function FinancialSummary({ costItems, quotations, invoices }: Props) {
             {formatSEK(actual)}
           </span>
         </div>
-
-        {/* Progress bar */}
-        {hasEstimate && (
-          <div className="space-y-2">
-            <div className="h-3 rounded-full bg-muted overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${
-                  isOverBudget ? 'bg-red-500' : 'bg-green-500'
-                }`}
-                style={{ width: `${displayPercentage}%` }}
-              />
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">{percentage.toFixed(0)}% used</span>
-              <span className={isOverBudget ? 'text-red-500' : 'text-green-600'}>
-                {isOverBudget
-                  ? `Over by ${formatSEK(Math.abs(difference))}`
-                  : `${formatSEK(difference)} remaining`}
-              </span>
-            </div>
-          </div>
-        )}
 
         {/* Breakdown */}
         <div className="border-t pt-4 mt-4 space-y-2 text-sm">
@@ -97,13 +92,6 @@ export function FinancialSummary({ costItems, quotations, invoices }: Props) {
             <span>{formatSEK(invoicesTotal)}</span>
           </div>
         </div>
-
-        {/* No estimate warning */}
-        {!hasEstimate && actual > 0 && (
-          <p className="text-sm text-muted-foreground">
-            No accepted quotations yet. Accept a quotation to set your budget estimate.
-          </p>
-        )}
       </div>
     </div>
   );
