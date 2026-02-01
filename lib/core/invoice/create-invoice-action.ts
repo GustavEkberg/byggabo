@@ -15,6 +15,7 @@ const CreateInvoiceInput = S.Struct({
   description: S.String.pipe(S.minLength(1), S.maxLength(2000)),
   amount: S.String.pipe(S.minLength(1)),
   invoiceDate: S.optional(S.DateFromString),
+  isPaid: S.optional(S.Boolean),
   fileUrl: S.optional(S.NullOr(S.String)),
   quotationId: S.optional(S.NullOr(S.String)),
   contactId: S.optional(S.NullOr(S.String))
@@ -109,7 +110,7 @@ export const createInvoiceAction = async (input: CreateInvoiceInput) => {
           description: parsed.description,
           amount: parsed.amount,
           invoiceDate: parsed.invoiceDate ?? new Date(),
-          isPaid: false,
+          isPaid: parsed.isPaid ?? false,
           fileUrl: parsed.fileUrl ?? null
         })
         .returning();

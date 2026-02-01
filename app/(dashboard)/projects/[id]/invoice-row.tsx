@@ -90,22 +90,18 @@ export function InvoiceRow({ invoice, contacts }: Props) {
       </div>
 
       <div className="flex items-center gap-2">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={invoice.isPaid}
-            onChange={e => handlePaidChange(e.target.checked)}
-            disabled={updating}
-            className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
-          />
-          <span
-            className={`text-xs px-2 py-1 rounded-full ${
-              invoice.isPaid ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-            }`}
-          >
-            {invoice.isPaid ? 'Paid' : 'Unpaid'}
-          </span>
-        </label>
+        <button
+          type="button"
+          disabled={updating}
+          className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
+            invoice.isPaid
+              ? 'bg-green-100 text-green-700 hover:bg-green-200'
+              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+          } ${updating ? 'opacity-50' : 'cursor-pointer'}`}
+          onClick={() => handlePaidChange(!invoice.isPaid)}
+        >
+          {invoice.isPaid ? 'Paid' : 'Unpaid'}
+        </button>
 
         <EditInvoiceDialog invoice={invoice} contacts={contacts} />
       </div>

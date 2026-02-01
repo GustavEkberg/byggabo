@@ -48,6 +48,7 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
   const [invoiceDate, setInvoiceDate] = useState<Date>(new Date());
   const [quotationId, setQuotationId] = useState<string | null>(null);
   const [contactId, setContactId] = useState<string>('');
+  const [isPaid, setIsPaid] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -111,6 +112,7 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
       description,
       amount,
       invoiceDate: invoiceDate.toISOString(),
+      isPaid,
       fileUrl,
       quotationId,
       contactId: finalContactId
@@ -134,6 +136,7 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
     setInvoiceDate(new Date());
     setQuotationId(null);
     setContactId('');
+    setIsPaid(false);
     setFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -222,6 +225,21 @@ export function CreateInvoiceDialog({ projectId, acceptedQuotations, contacts }:
             label="Contractor"
             placeholder="No contractor selected"
           />
+
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">Payment Status</label>
+            <button
+              type="button"
+              className={`text-xs px-2 py-0.5 rounded-full w-fit transition-colors cursor-pointer ${
+                isPaid
+                  ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}
+              onClick={() => setIsPaid(!isPaid)}
+            >
+              {isPaid ? 'Paid' : 'Unpaid'}
+            </button>
+          </div>
 
           <div className="grid gap-2">
             <label htmlFor="create-invoice-file" className="text-sm font-medium">
