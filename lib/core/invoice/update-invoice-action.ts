@@ -87,7 +87,8 @@ export const updateInvoiceAction = async (input: UpdateInvoiceInput) => {
           createdById: user.id,
           type: 'INVOICE',
           referenceId: invoice.id,
-          description: parsed.isPaid ? 'Invoice marked as paid' : 'Invoice marked as unpaid'
+          description: parsed.isPaid ? 'Invoice marked as paid' : 'Invoice marked as unpaid',
+          amount: invoice.amount
         });
       }
 

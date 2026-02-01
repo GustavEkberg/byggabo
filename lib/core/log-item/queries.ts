@@ -21,6 +21,7 @@ export type LogItemWithUser = {
   type: 'COST_ITEM' | 'QUOTATION' | 'INVOICE' | 'COMMENT';
   referenceId: string | null;
   description: string;
+  amount: string | null;
   createdAt: Date;
   createdBy: { id: string; name: string } | null;
   mentions: LogItemMentionInfo[];
@@ -62,6 +63,7 @@ export const getLogItems = (projectId: string) =>
         type: schema.logItem.type,
         referenceId: schema.logItem.referenceId,
         description: schema.logItem.description,
+        amount: schema.logItem.amount,
         createdAt: schema.logItem.createdAt,
         createdById: schema.logItem.createdById,
         userName: schema.user.name
@@ -109,6 +111,7 @@ export const getLogItems = (projectId: string) =>
       type: row.type,
       referenceId: row.referenceId,
       description: row.description,
+      amount: row.amount,
       createdAt: row.createdAt,
       createdBy: row.createdById ? { id: row.createdById, name: row.userName ?? 'Unknown' } : null,
       mentions: mentionsByLogItem.get(row.id) ?? []
@@ -146,6 +149,7 @@ export const getRecentLogItems = (limit = 20) =>
         type: schema.logItem.type,
         referenceId: schema.logItem.referenceId,
         description: schema.logItem.description,
+        amount: schema.logItem.amount,
         createdAt: schema.logItem.createdAt,
         createdById: schema.logItem.createdById,
         userName: schema.user.name
@@ -196,6 +200,7 @@ export const getRecentLogItems = (limit = 20) =>
         type: row.type,
         referenceId: row.referenceId,
         description: row.description,
+        amount: row.amount,
         createdAt: row.createdAt,
         createdBy: row.createdById
           ? { id: row.createdById, name: row.userName ?? 'Unknown' }

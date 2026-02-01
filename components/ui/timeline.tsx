@@ -20,6 +20,7 @@ import {
 import { addCommentAction } from '@/lib/core/log-item/add-comment-action';
 import { updateLogItemAction } from '@/lib/core/log-item/update-log-item-action';
 import { deleteLogItemAction } from '@/lib/core/log-item/delete-log-item-action';
+import { formatSEK } from '@/lib/utils';
 
 type ContactSuggestion = Pick<Contact, 'id' | 'name' | 'company'>;
 
@@ -163,6 +164,26 @@ function getTypeLabel(type: LogType) {
     case 'COMMENT':
       return 'Comment';
   }
+}
+
+/** Get color class for amount based on log item type */
+function getAmountColorClass(type: LogType): string {
+  switch (type) {
+    case 'COST_ITEM':
+      return 'text-red-600 dark:text-red-400';
+    case 'INVOICE':
+      return 'text-green-600 dark:text-green-400';
+    case 'QUOTATION':
+      return 'text-blue-600 dark:text-blue-400';
+    default:
+      return 'text-muted-foreground';
+  }
+}
+
+/** Format amount for display with sign prefix for cost items */
+function formatAmount(amount: string, type: LogType): string {
+  const formatted = formatSEK(amount);
+  return type === 'COST_ITEM' ? `-${formatted}` : formatted;
 }
 
 function isLogType(value: string): value is LogType {
@@ -501,11 +522,20 @@ export function Timeline({
                       )}
                     </div>
                   </div>
-                  <p
-                    className={`text-sm text-muted-foreground mt-1 whitespace-pre-wrap ${showProjectName ? 'line-clamp-2' : ''}`}
-                  >
-                    {renderDescriptionWithMentions(item.description, item.mentions)}
-                  </p>
+                  <div className="flex items-start justify-between gap-2 mt-1">
+                    <p
+                      className={`text-sm text-muted-foreground whitespace-pre-wrap ${showProjectName ? 'line-clamp-2' : ''}`}
+                    >
+                      {renderDescriptionWithMentions(item.description, item.mentions)}
+                    </p>
+                    {item.amount && (
+                      <span
+                        className={`flex-shrink-0 font-mono text-sm ${getAmountColorClass(item.type)}`}
+                      >
+                        {formatAmount(item.amount, item.type)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

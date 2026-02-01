@@ -288,6 +288,7 @@ export const logItem = pgTable('logItem', {
   }).notNull(),
   referenceId: text('referenceId'),
   description: text('description').notNull(),
+  amount: decimal('amount', { precision: 10, scale: 2 }),
   createdAt: timestamp('createdAt').notNull().defaultNow()
 });
 

@@ -46,6 +46,12 @@ export const LoginForm = ({ defaultEmail }: LoginFormProps) => {
 
   return (
     <>
+      <span className="text-5xl font-semibold tracking-tight">
+        <span className="mr-0.5 text-6xl" style={{ WebkitTextStroke: '2px currentColor' }}>
+          ⌂
+        </span>
+        Byggabo
+      </span>
       <form onSubmit={handleLogin} className="w-full space-y-4">
         <Input
           id="email"
@@ -61,9 +67,7 @@ export const LoginForm = ({ defaultEmail }: LoginFormProps) => {
           Log in
         </Button>
       </form>
-
       {errorMessage && <p className="text-red-500 text-sm text-center mt-4 mb-8">{errorMessage}</p>}
-
       {/* <p className="text-center text-sm text-muted-foreground"> */}
       {/*   New user?{' '} */}
       {/*   <Link href="/register" className="text-primary hover:underline"> */}

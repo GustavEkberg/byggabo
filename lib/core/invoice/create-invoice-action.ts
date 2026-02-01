@@ -125,7 +125,8 @@ export const createInvoiceAction = async (input: CreateInvoiceInput) => {
         createdById: user.id,
         type: 'INVOICE',
         referenceId: invoice.id,
-        description: logDescription
+        description: logDescription,
+        amount: invoice.amount
       });
 
       // Auto-link contact to project if provided

@@ -78,7 +78,8 @@ export const createCostItemAction = async (input: CreateCostItemInput) => {
         createdById: user.id,
         type: 'COST_ITEM',
         referenceId: costItem.id,
-        description: `Added cost: ${parsed.name} - ${parsed.amount} kr`
+        description: `Added cost: ${parsed.name}`,
+        amount: parsed.amount
       });
 
       return costItem;

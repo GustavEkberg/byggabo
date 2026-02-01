@@ -107,7 +107,8 @@ export const convertToInvoiceAction = async (input: ConvertToInvoiceInput) => {
         createdById: user.id,
         type: 'INVOICE',
         referenceId: invoice.id,
-        description: `Invoice created from quotation: ${invoice.description}`
+        description: `Invoice created from quotation: ${invoice.description}`,
+        amount: invoice.amount
       });
 
       // Auto-link contact to project if quotation had a contact

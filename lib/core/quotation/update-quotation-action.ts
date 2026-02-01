@@ -106,7 +106,8 @@ export const updateQuotationAction = async (input: UpdateQuotationInput) => {
           createdById: user.id,
           type: 'QUOTATION',
           referenceId: quotation.id,
-          description: `Quotation status changed to ${parsed.status.toLowerCase()}`
+          description: `Quotation status changed to ${parsed.status.toLowerCase()}`,
+          amount: quotation.amount
         });
       }
 
