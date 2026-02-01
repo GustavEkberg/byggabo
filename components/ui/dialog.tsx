@@ -95,9 +95,28 @@ function DialogDescription({
   );
 }
 
+function DialogCloseButton({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<'button'> & { children?: React.ReactNode }) {
+  return (
+    <DialogPrimitive.Close
+      className={cn(
+        'focus-visible:border-ring focus-visible:ring-ring/50 rounded-md border border-transparent bg-clip-padding text-sm font-medium focus-visible:ring-[3px] inline-flex items-center justify-center whitespace-nowrap transition-all disabled:pointer-events-none disabled:opacity-50 outline-none select-none h-9 gap-1.5 px-2.5 border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 shadow-xs',
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </DialogPrimitive.Close>
+  );
+}
+
 export {
   Dialog,
   DialogClose,
+  DialogCloseButton,
   DialogContent,
   DialogDescription,
   DialogFooter,

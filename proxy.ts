@@ -4,15 +4,22 @@ import { NextResponse, type NextRequest } from 'next/server';
 const SESSION_COOKIE = 'better-auth.session_token';
 const SECURE_SESSION_COOKIE = '__Secure-better-auth.session_token';
 
-// Auth routes that don't require authentication
-const AUTH_ROUTES = ['/login', '/verify'];
+// Routes that don't require authentication
+const PUBLIC_ROUTES = ['/', '/login', '/verify'];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const response = NextResponse.next();
 
-  // Skip auth routes - let them render normally
-  if (AUTH_ROUTES.some(route => pathname.startsWith(route))) {
-    return NextResponse.next();
+  // Add pathname header for layout to detect current route
+  response.headers.set('x-pathname', pathname);
+
+  // Skip public routes - let them render normally
+  if (
+    PUBLIC_ROUTES.includes(pathname) ||
+    PUBLIC_ROUTES.some(r => r !== '/' && pathname.startsWith(r))
+  ) {
+    return response;
   }
 
   // Check for session cookie (either secure or non-secure variant)
@@ -24,7 +31,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
