@@ -90,35 +90,35 @@ export function QuotationRow({ quotation, contacts, hasInvoice }: Props) {
   };
 
   return (
-    <div className="flex items-center justify-between p-4 gap-4">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="font-medium truncate">{quotation.description}</span>
-          {quotation.fileUrl && (
-            <FileLink fileUrl={quotation.fileUrl} className="text-xs">
-              PDF
-            </FileLink>
-          )}
-        </div>
-        <div className="flex items-center gap-2 mt-1">
-          {quotation.contact && (
-            <span className="text-sm text-muted-foreground">
-              {quotation.contact.company ?? quotation.contact.name}
+    <div className="p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-medium truncate">{quotation.description}</span>
+            {quotation.fileUrl && (
+              <FileLink fileUrl={quotation.fileUrl} className="text-xs flex-shrink-0">
+                PDF
+              </FileLink>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            {quotation.contact && (
+              <span className="text-sm text-muted-foreground truncate">
+                {quotation.contact.company ?? quotation.contact.name}
+              </span>
+            )}
+            <span className="text-xs text-muted-foreground/60 flex-shrink-0">
+              {quotation.receivedDate.toLocaleDateString('sv-SE')}
             </span>
-          )}
-          <span className="text-xs text-muted-foreground/60">
-            {quotation.receivedDate.toLocaleDateString('sv-SE')}
-          </span>
+          </div>
         </div>
-      </div>
 
-      <div className="text-right">
-        <span className="font-semibold tabular-nums">
+        <span className="font-semibold tabular-nums flex-shrink-0">
           {parseFloat(quotation.amount).toLocaleString('sv-SE')} kr
         </span>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Select
           value={quotation.status}
           onValueChange={value => {

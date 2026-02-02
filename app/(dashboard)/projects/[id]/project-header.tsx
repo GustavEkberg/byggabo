@@ -48,19 +48,21 @@ export function ProjectHeader({ project, sections, contacts, linkedContactIds }:
   };
 
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div>
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
         <div className="flex items-center gap-2">
           {section && <SectionIcon icon={section.icon} color={section.color} size="md" />}
-          <h1 className="text-2xl font-semibold">{project.name}</h1>
+          <h1 className="text-2xl font-semibold truncate">{project.name}</h1>
         </div>
         {section && <p className="text-sm text-muted-foreground mt-1">{section.name}</p>}
-        {project.description && <p className="text-muted-foreground mt-1">{project.description}</p>}
+        {project.description && (
+          <p className="text-muted-foreground mt-1 line-clamp-2">{project.description}</p>
+        )}
         <p className="text-xs text-muted-foreground/60 mt-2">
           Created {project.createdAt.toLocaleDateString('sv-SE')}
         </p>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-shrink-0">
         <LinkContactDialog
           project={project}
           contacts={contacts}

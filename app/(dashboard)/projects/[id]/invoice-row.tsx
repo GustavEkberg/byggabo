@@ -58,33 +58,33 @@ export function InvoiceRow({ invoice, contacts }: Props) {
   };
 
   return (
-    <div className="flex items-center justify-between p-4 gap-4">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="font-medium truncate">{invoice.description}</span>
-          {invoice.fileUrl && (
-            <FileLink fileUrl={invoice.fileUrl} className="text-xs">
-              PDF
-            </FileLink>
-          )}
-        </div>
-        <div className="flex items-center gap-2 mt-1">
-          {invoice.contact && (
-            <span className="text-xs text-muted-foreground">
-              {invoice.contact.company ?? invoice.contact.name}
+    <div className="p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-medium truncate">{invoice.description}</span>
+            {invoice.fileUrl && (
+              <FileLink fileUrl={invoice.fileUrl} className="text-xs flex-shrink-0">
+                PDF
+              </FileLink>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {invoice.contact && (
+              <span className="text-xs text-muted-foreground truncate">
+                {invoice.contact.company ?? invoice.contact.name}
+              </span>
+            )}
+            <span className="text-xs text-muted-foreground/60">
+              {invoice.invoiceDate.toLocaleDateString('sv-SE')}
             </span>
-          )}
-          <span className="text-xs text-muted-foreground/60">
-            {invoice.invoiceDate.toLocaleDateString('sv-SE')}
-          </span>
-          {invoice.quotation && (
-            <span className="text-xs text-muted-foreground">From quotation</span>
-          )}
+            {invoice.quotation && (
+              <span className="text-xs text-muted-foreground">From quotation</span>
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className="text-right">
-        <span className="font-semibold tabular-nums">
+        <span className="font-semibold tabular-nums flex-shrink-0">
           {parseFloat(invoice.amount).toLocaleString('sv-SE')} kr
         </span>
       </div>
