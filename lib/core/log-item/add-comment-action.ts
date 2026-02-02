@@ -10,10 +10,17 @@ import * as schema from '@/lib/services/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '@/lib/core/errors';
 
+const AttachmentInput = S.Struct({
+  fileUrl: S.String.pipe(S.minLength(1)),
+  fileName: S.String.pipe(S.minLength(1)),
+  fileType: S.String.pipe(S.minLength(1))
+});
+
 const AddCommentInput = S.Struct({
   projectId: S.String.pipe(S.minLength(1)),
   description: S.String.pipe(S.minLength(1), S.maxLength(2000)),
-  mentionedContactIds: S.optional(S.Array(S.String))
+  mentionedContactIds: S.optional(S.Array(S.String)),
+  attachments: S.optional(S.Array(AttachmentInput))
 });
 
 type AddCommentInput = S.Schema.Type<typeof AddCommentInput>;
@@ -118,6 +125,19 @@ export const addCommentAction = async (input: AddCommentInput) => {
             });
           }
         }
+      }
+
+      // Insert attachments
+      const attachments = parsed.attachments ?? [];
+      if (attachments.length > 0) {
+        yield* db.insert(schema.logItemAttachment).values(
+          attachments.map(attachment => ({
+            logItemId: logItem.id,
+            fileUrl: attachment.fileUrl,
+            fileName: attachment.fileName,
+            fileType: attachment.fileType
+          }))
+        );
       }
 
       return logItem;

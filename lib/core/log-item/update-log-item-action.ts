@@ -10,11 +10,18 @@ import * as schema from '@/lib/services/db/schema';
 import { eq } from 'drizzle-orm';
 import { ValidationError, NotFoundError, UnauthorizedError } from '@/lib/core/errors';
 
+const AttachmentInput = S.Struct({
+  fileUrl: S.String.pipe(S.minLength(1)),
+  fileName: S.String.pipe(S.minLength(1)),
+  fileType: S.String.pipe(S.minLength(1))
+});
+
 const UpdateLogItemInput = S.Struct({
   logItemId: S.String.pipe(S.minLength(1)),
   description: S.optional(S.String.pipe(S.minLength(1), S.maxLength(2000))),
   amount: S.optional(S.NullOr(S.String)),
-  createdAt: S.optional(S.String)
+  createdAt: S.optional(S.String),
+  newAttachments: S.optional(S.Array(AttachmentInput))
 });
 
 type UpdateLogItemInput = S.Schema.Type<typeof UpdateLogItemInput>;
@@ -84,6 +91,19 @@ export const updateLogItemAction = async (input: UpdateLogItemInput) => {
         .set(updateData)
         .where(eq(schema.logItem.id, parsed.logItemId))
         .returning();
+
+      // Insert new attachments
+      const newAttachments = parsed.newAttachments ?? [];
+      if (newAttachments.length > 0) {
+        yield* db.insert(schema.logItemAttachment).values(
+          newAttachments.map(attachment => ({
+            logItemId: logItem.id,
+            fileUrl: attachment.fileUrl,
+            fileName: attachment.fileName,
+            fileType: attachment.fileType
+          }))
+        );
+      }
 
       return logItem;
     }).pipe(

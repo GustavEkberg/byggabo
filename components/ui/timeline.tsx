@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import type { LogItemWithUser, LogItemMentionInfo } from '@/lib/core/log-item/queries';
@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { MentionInput } from '@/components/ui/mention-input';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { ContactHoverCard } from '@/components/ui/contact-hover-card';
+import { FileLink } from '@/components/ui/file-link';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -21,6 +22,8 @@ import {
 import { addCommentAction } from '@/lib/core/log-item/add-comment-action';
 import { updateLogItemAction } from '@/lib/core/log-item/update-log-item-action';
 import { deleteLogItemAction } from '@/lib/core/log-item/delete-log-item-action';
+import { deleteAttachmentAction } from '@/lib/core/log-item/delete-attachment-action';
+import { getUploadUrlAction } from '@/lib/core/file/get-upload-url-action';
 import { formatSEK } from '@/lib/utils';
 
 type ContactSuggestion = Pick<Contact, 'id' | 'name' | 'company'>;
@@ -274,11 +277,15 @@ export function Timeline({
   const [showAddComment, setShowAddComment] = useState(false);
   const [comment, setComment] = useState('');
   const [mentionedContactIds, setMentionedContactIds] = useState<string[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
   const [pending, setPending] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDescription, setEditDescription] = useState('');
   const [editAmount, setEditAmount] = useState<string | null>(null);
   const [editDate, setEditDate] = useState<Date | undefined>(undefined);
+  const [editNewFiles, setEditNewFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredItems = filter === 'ALL' ? logItems : logItems.filter(item => item.type === filter);
 
@@ -292,15 +299,67 @@ export function Timeline({
     setMentionedContactIds(ids);
   }, []);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = e.target.files;
+    if (selectedFiles) {
+      setFiles(prev => [...prev, ...Array.from(selectedFiles)]);
+    }
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!comment.trim() || !projectId) return;
 
     setPending(true);
+
+    // Upload files first
+    type UploadedAttachment = { fileUrl: string; fileName: string; fileType: string };
+    const uploadedAttachments: UploadedAttachment[] = [];
+
+    for (const file of files) {
+      const uploadResult = await getUploadUrlAction({
+        fileName: file.name,
+        folder: 'log-attachments'
+      });
+
+      if (uploadResult._tag === 'Error') {
+        toast.error(`Failed to upload ${file.name}`);
+        setPending(false);
+        return;
+      }
+
+      const uploadResponse = await fetch(uploadResult.signedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type }
+      });
+
+      if (!uploadResponse.ok) {
+        toast.error(`Failed to upload ${file.name}`);
+        setPending(false);
+        return;
+      }
+
+      uploadedAttachments.push({
+        fileUrl: uploadResult.publicUrl,
+        fileName: file.name,
+        fileType: file.type
+      });
+    }
+
     const result = await addCommentAction({
       projectId,
       description: comment.trim(),
-      mentionedContactIds: mentionedContactIds.length > 0 ? mentionedContactIds : undefined
+      mentionedContactIds: mentionedContactIds.length > 0 ? mentionedContactIds : undefined,
+      attachments: uploadedAttachments.length > 0 ? uploadedAttachments : undefined
     });
     setPending(false);
 
@@ -312,6 +371,7 @@ export function Timeline({
     toast.success('Comment added');
     setComment('');
     setMentionedContactIds([]);
+    setFiles([]);
     setShowAddComment(false);
   };
 
@@ -320,6 +380,7 @@ export function Timeline({
     setEditDescription(item.description);
     setEditAmount(item.amount);
     setEditDate(item.createdAt);
+    setEditNewFiles([]);
   };
 
   const cancelEditing = () => {
@@ -327,6 +388,21 @@ export function Timeline({
     setEditDescription('');
     setEditAmount(null);
     setEditDate(undefined);
+    setEditNewFiles([]);
+  };
+
+  const handleEditFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = e.target.files;
+    if (selectedFiles) {
+      setEditNewFiles(prev => [...prev, ...Array.from(selectedFiles)]);
+    }
+    if (editFileInputRef.current) {
+      editFileInputRef.current.value = '';
+    }
+  };
+
+  const removeEditFile = (index: number) => {
+    setEditNewFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -334,11 +410,48 @@ export function Timeline({
     if (!editingId || !editDescription.trim() || !editDate) return;
 
     setPending(true);
+
+    // Upload new files first
+    type UploadedAttachment = { fileUrl: string; fileName: string; fileType: string };
+    const uploadedAttachments: UploadedAttachment[] = [];
+
+    for (const file of editNewFiles) {
+      const uploadResult = await getUploadUrlAction({
+        fileName: file.name,
+        folder: 'log-attachments'
+      });
+
+      if (uploadResult._tag === 'Error') {
+        toast.error(`Failed to upload ${file.name}`);
+        setPending(false);
+        return;
+      }
+
+      const uploadResponse = await fetch(uploadResult.signedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type }
+      });
+
+      if (!uploadResponse.ok) {
+        toast.error(`Failed to upload ${file.name}`);
+        setPending(false);
+        return;
+      }
+
+      uploadedAttachments.push({
+        fileUrl: uploadResult.publicUrl,
+        fileName: file.name,
+        fileType: file.type
+      });
+    }
+
     const result = await updateLogItemAction({
       logItemId: editingId,
       description: editDescription.trim(),
       amount: editAmount,
-      createdAt: editDate.toISOString()
+      createdAt: editDate.toISOString(),
+      newAttachments: uploadedAttachments.length > 0 ? uploadedAttachments : undefined
     });
     setPending(false);
 
@@ -364,6 +477,21 @@ export function Timeline({
     }
 
     toast.success('Deleted');
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!confirm('Delete this attachment?')) return;
+
+    setPending(true);
+    const result = await deleteAttachmentAction({ attachmentId });
+    setPending(false);
+
+    if (result._tag === 'Error') {
+      toast.error(result.message);
+      return;
+    }
+
+    toast.success('Attachment deleted');
   };
 
   const canEdit = (item: TimelineItem) => item.createdBy?.id === currentUserId;
@@ -398,6 +526,69 @@ export function Timeline({
               maxLength={2000}
               rows={2}
             />
+
+            {/* File attachments */}
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                multiple
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="mr-1"
+                >
+                  <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                </svg>
+                Attach
+              </Button>
+              {files.map((file, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-1 px-2 py-1 text-xs bg-muted rounded"
+                >
+                  <span className="max-w-32 truncate">{file.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(index)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M18 6 6 18" />
+                      <path d="m6 6 12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+
             <div className="flex justify-end">
               <Button type="submit" size="sm" disabled={pending || !comment.trim()}>
                 {pending ? 'Adding...' : 'Add'}
@@ -462,6 +653,104 @@ export function Timeline({
                     />
                   )}
                   <DateTimePicker value={editDate} onChange={setEditDate} />
+
+                  {/* Existing attachments */}
+                  {item.attachments.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {item.attachments.map(attachment => (
+                        <div
+                          key={attachment.id}
+                          className="flex items-center gap-1.5 px-2 py-1 text-xs bg-muted rounded"
+                        >
+                          <span className="max-w-24 truncate">{attachment.fileName}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteAttachment(attachment.id)}
+                            className="text-muted-foreground hover:text-destructive"
+                            title="Delete attachment"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M18 6 6 18" />
+                              <path d="m6 6 12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add new attachments */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      ref={editFileInputRef}
+                      type="file"
+                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                      multiple
+                      onChange={handleEditFileChange}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => editFileInputRef.current?.click()}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="mr-1"
+                      >
+                        <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                      </svg>
+                      Attach
+                    </Button>
+                    {editNewFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-1 px-2 py-1 text-xs bg-muted rounded"
+                      >
+                        <span className="max-w-32 truncate">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeEditFile(index)}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M18 6 6 18" />
+                            <path d="m6 6 12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
                   <div className="flex gap-2 justify-end">
                     <Button
                       type="button"
@@ -550,6 +839,80 @@ export function Timeline({
                       </span>
                     )}
                   </div>
+                  {/* Attachments */}
+                  {item.attachments.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {item.attachments.map(attachment => (
+                        <div
+                          key={attachment.id}
+                          className="group relative flex items-center gap-1.5 px-2 py-1 text-xs bg-muted rounded"
+                        >
+                          {attachment.fileType.startsWith('image/') ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="text-muted-foreground"
+                            >
+                              <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                              <circle cx="9" cy="9" r="2" />
+                              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                            </svg>
+                          ) : (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="text-muted-foreground"
+                            >
+                              <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                              <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                            </svg>
+                          )}
+                          <FileLink
+                            fileUrl={attachment.fileUrl}
+                            className="max-w-24 truncate text-xs"
+                          >
+                            {attachment.fileName}
+                          </FileLink>
+                          {canEdit(item) && (
+                            <button
+                              onClick={() => handleDeleteAttachment(attachment.id)}
+                              className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+                              title="Delete attachment"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

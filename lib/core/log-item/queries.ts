@@ -14,6 +14,14 @@ export type LogItemMentionInfo = {
   contactCompany: string | null;
 };
 
+/** Attachment in a log item */
+export type LogItemAttachmentInfo = {
+  id: string;
+  fileUrl: string;
+  fileName: string;
+  fileType: string;
+};
+
 /** Log item with creator info */
 export type LogItemWithUser = {
   id: string;
@@ -25,6 +33,7 @@ export type LogItemWithUser = {
   createdAt: Date;
   createdBy: { id: string; name: string } | null;
   mentions: LogItemMentionInfo[];
+  attachments: LogItemAttachmentInfo[];
 };
 
 /** Log item with project and creator info (for dashboard) */
@@ -105,6 +114,34 @@ export const getLogItems = (projectId: string) =>
       mentionsByLogItem.set(m.logItemId, existing);
     }
 
+    // Fetch attachments for all log items
+    const attachmentRows =
+      logItemIds.length > 0
+        ? yield* db
+            .select({
+              id: schema.logItemAttachment.id,
+              logItemId: schema.logItemAttachment.logItemId,
+              fileUrl: schema.logItemAttachment.fileUrl,
+              fileName: schema.logItemAttachment.fileName,
+              fileType: schema.logItemAttachment.fileType
+            })
+            .from(schema.logItemAttachment)
+            .where(inArray(schema.logItemAttachment.logItemId, logItemIds))
+        : [];
+
+    // Group attachments by log item
+    const attachmentsByLogItem = new Map<string, LogItemAttachmentInfo[]>();
+    for (const a of attachmentRows) {
+      const existing = attachmentsByLogItem.get(a.logItemId) ?? [];
+      existing.push({
+        id: a.id,
+        fileUrl: a.fileUrl,
+        fileName: a.fileName,
+        fileType: a.fileType
+      });
+      attachmentsByLogItem.set(a.logItemId, existing);
+    }
+
     const logItems: LogItemWithUser[] = rows.map(row => ({
       id: row.id,
       projectId: row.projectId,
@@ -114,7 +151,8 @@ export const getLogItems = (projectId: string) =>
       amount: row.amount,
       createdAt: row.createdAt,
       createdBy: row.createdById ? { id: row.createdById, name: row.userName ?? 'Unknown' } : null,
-      mentions: mentionsByLogItem.get(row.id) ?? []
+      mentions: mentionsByLogItem.get(row.id) ?? [],
+      attachments: attachmentsByLogItem.get(row.id) ?? []
     }));
 
     return logItems;
@@ -192,6 +230,34 @@ export const getRecentLogItems = (limit = 20) =>
       mentionsByLogItem.set(m.logItemId, existing);
     }
 
+    // Fetch attachments for all log items
+    const attachmentRows =
+      logItemIds.length > 0
+        ? yield* db
+            .select({
+              id: schema.logItemAttachment.id,
+              logItemId: schema.logItemAttachment.logItemId,
+              fileUrl: schema.logItemAttachment.fileUrl,
+              fileName: schema.logItemAttachment.fileName,
+              fileType: schema.logItemAttachment.fileType
+            })
+            .from(schema.logItemAttachment)
+            .where(inArray(schema.logItemAttachment.logItemId, logItemIds))
+        : [];
+
+    // Group attachments by log item
+    const attachmentsByLogItem = new Map<string, LogItemAttachmentInfo[]>();
+    for (const a of attachmentRows) {
+      const existing = attachmentsByLogItem.get(a.logItemId) ?? [];
+      existing.push({
+        id: a.id,
+        fileUrl: a.fileUrl,
+        fileName: a.fileName,
+        fileType: a.fileType
+      });
+      attachmentsByLogItem.set(a.logItemId, existing);
+    }
+
     const logItems: LogItemWithProjectAndUser[] = rows.map(row => {
       const project = projectMap.get(row.projectId);
       return {
@@ -206,6 +272,7 @@ export const getRecentLogItems = (limit = 20) =>
           ? { id: row.createdById, name: row.userName ?? 'Unknown' }
           : null,
         mentions: mentionsByLogItem.get(row.id) ?? [],
+        attachments: attachmentsByLogItem.get(row.id) ?? [],
         project: { id: row.projectId, name: project?.name ?? 'Unknown' }
       };
     });

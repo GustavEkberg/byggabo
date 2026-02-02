@@ -11,16 +11,16 @@ import * as schema from '@/lib/services/db/schema';
 import { eq } from 'drizzle-orm';
 import { ValidationError, NotFoundError, UnauthorizedError } from '@/lib/core/errors';
 
-const DeleteLogItemInput = S.Struct({
-  logItemId: S.String.pipe(S.minLength(1))
+const DeleteAttachmentInput = S.Struct({
+  attachmentId: S.String.pipe(S.minLength(1))
 });
 
-type DeleteLogItemInput = S.Schema.Type<typeof DeleteLogItemInput>;
+type DeleteAttachmentInput = S.Schema.Type<typeof DeleteAttachmentInput>;
 
-export const deleteLogItemAction = async (input: DeleteLogItemInput) => {
+export const deleteAttachmentAction = async (input: DeleteAttachmentInput) => {
   return await NextEffect.runPromise(
     Effect.gen(function* () {
-      const parsed = yield* S.decodeUnknown(DeleteLogItemInput)(input).pipe(
+      const parsed = yield* S.decodeUnknown(DeleteAttachmentInput)(input).pipe(
         Effect.mapError(
           () =>
             new ValidationError({
@@ -33,89 +33,70 @@ export const deleteLogItemAction = async (input: DeleteLogItemInput) => {
       const { propertyId, user } = yield* getSessionWithProperty();
       const db = yield* Db;
 
-      // Get log item with project info
+      // Get attachment with log item and project info
       const [existing] = yield* db
         .select({
-          logItem: schema.logItem,
+          attachment: schema.logItemAttachment,
+          logItem: {
+            id: schema.logItem.id,
+            createdById: schema.logItem.createdById,
+            projectId: schema.logItem.projectId
+          },
           project: {
             id: schema.project.id,
             propertyId: schema.project.propertyId
           }
         })
-        .from(schema.logItem)
+        .from(schema.logItemAttachment)
+        .innerJoin(schema.logItem, eq(schema.logItemAttachment.logItemId, schema.logItem.id))
         .innerJoin(schema.project, eq(schema.logItem.projectId, schema.project.id))
-        .where(eq(schema.logItem.id, parsed.logItemId))
+        .where(eq(schema.logItemAttachment.id, parsed.attachmentId))
         .limit(1);
 
       if (!existing || existing.project.propertyId !== propertyId) {
         return yield* new NotFoundError({
-          message: 'Log item not found',
-          entity: 'logItem',
-          id: parsed.logItemId
+          message: 'Attachment not found',
+          entity: 'logItemAttachment',
+          id: parsed.attachmentId
         });
       }
 
-      // Only allow deleting own log items
+      // Only allow deleting attachments from own log items
       if (existing.logItem.createdById !== user.id) {
         return yield* new UnauthorizedError({
-          message: 'You can only delete your own log items'
+          message: 'You can only delete attachments from your own comments'
         });
       }
 
       yield* Effect.annotateCurrentSpan({
         'user.id': user.id,
-        'logItem.id': parsed.logItemId
+        'attachment.id': parsed.attachmentId,
+        'logItem.id': existing.logItem.id
       });
 
-      // Get attachments to delete from S3
-      const attachments = yield* db
-        .select({
-          id: schema.logItemAttachment.id,
-          fileUrl: schema.logItemAttachment.fileUrl
-        })
-        .from(schema.logItemAttachment)
-        .where(eq(schema.logItemAttachment.logItemId, parsed.logItemId));
+      // Delete S3 file
+      const s3 = yield* S3;
+      const key = s3.getObjectKeyFromUrl(existing.attachment.fileUrl);
+      yield* s3.deleteFile(key).pipe(
+        Effect.tapError(e =>
+          Effect.logWarning('Failed to delete S3 file for attachment', {
+            attachmentId: parsed.attachmentId,
+            fileUrl: existing.attachment.fileUrl,
+            error: e
+          })
+        ),
+        Effect.catchAll(() => Effect.void)
+      );
 
-      // Delete S3 files for attachments
-      if (attachments.length > 0) {
-        const s3 = yield* S3;
-        yield* Effect.forEach(
-          attachments,
-          attachment =>
-            Effect.gen(function* () {
-              const key = s3.getObjectKeyFromUrl(attachment.fileUrl);
-              yield* s3.deleteFile(key);
-            }).pipe(
-              Effect.tapError(e =>
-                Effect.logWarning('Failed to delete S3 file for attachment', {
-                  attachmentId: attachment.id,
-                  fileUrl: attachment.fileUrl,
-                  error: e
-                })
-              ),
-              Effect.catchAll(() => Effect.void)
-            ),
-          { concurrency: 'unbounded' }
-        );
-      }
-
-      // Delete attachments (cascade should handle this, but be explicit)
+      // Delete the attachment record
       yield* db
         .delete(schema.logItemAttachment)
-        .where(eq(schema.logItemAttachment.logItemId, parsed.logItemId));
-
-      // Delete mentions (cascade should handle this, but be explicit)
-      yield* db
-        .delete(schema.logItemMention)
-        .where(eq(schema.logItemMention.logItemId, parsed.logItemId));
-
-      // Delete the log item
-      yield* db.delete(schema.logItem).where(eq(schema.logItem.id, parsed.logItemId));
+        .where(eq(schema.logItemAttachment.id, parsed.attachmentId));
 
       return { projectId: existing.logItem.projectId };
     }).pipe(
-      Effect.withSpan('action.logItem.delete', {
-        attributes: { operation: 'logItem.delete' }
+      Effect.withSpan('action.logItemAttachment.delete', {
+        attributes: { operation: 'logItemAttachment.delete' }
       }),
       Effect.provide(AppLayer),
       Effect.scoped,
@@ -145,14 +126,13 @@ export const deleteLogItemAction = async (input: DeleteLogItemInput) => {
             Match.orElse(() =>
               Effect.succeed({
                 _tag: 'Error' as const,
-                message: 'Failed to delete log item'
+                message: 'Failed to delete attachment'
               })
             )
           ),
         onSuccess: ({ projectId }) =>
           Effect.sync(() => {
             revalidatePath(`/projects/${projectId}`);
-            revalidatePath('/projects');
             return { _tag: 'Success' as const };
           })
       })

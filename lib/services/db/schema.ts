@@ -314,6 +314,25 @@ export type LogItemMention = typeof logItemMention.$inferSelect;
 export type InsertLogItemMention = typeof logItemMention.$inferInsert;
 
 ////////////////////////////////////////////////////////////////////////
+// LOG ITEM ATTACHMENT - Files/images attached to log items
+////////////////////////////////////////////////////////////////////////
+export const logItemAttachment = pgTable('logItemAttachment', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  logItemId: text('logItemId')
+    .notNull()
+    .references(() => logItem.id, { onDelete: 'cascade' }),
+  fileUrl: text('fileUrl').notNull(),
+  fileName: text('fileName').notNull(),
+  fileType: text('fileType').notNull(), // MIME type
+  createdAt: timestamp('createdAt').notNull().defaultNow()
+});
+
+export type LogItemAttachment = typeof logItemAttachment.$inferSelect;
+export type InsertLogItemAttachment = typeof logItemAttachment.$inferInsert;
+
+////////////////////////////////////////////////////////////////////////
 // PROJECT CONTACT - Link contacts to projects
 ////////////////////////////////////////////////////////////////////////
 export const projectContact = pgTable('projectContact', {
