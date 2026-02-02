@@ -12,6 +12,7 @@ import { MentionInput } from '@/components/ui/mention-input';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { ContactHoverCard } from '@/components/ui/contact-hover-card';
 import { FileLink } from '@/components/ui/file-link';
+import { ImagePreviewLink } from '@/components/ui/image-preview-link';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -881,12 +882,22 @@ export function Timeline({
                               <path d="M14 2v4a2 2 0 0 0 2 2h4" />
                             </svg>
                           )}
-                          <FileLink
-                            fileUrl={attachment.fileUrl}
-                            className="max-w-24 truncate text-xs"
-                          >
-                            {attachment.fileName}
-                          </FileLink>
+                          {attachment.fileType.startsWith('image/') ? (
+                            <ImagePreviewLink
+                              fileUrl={attachment.fileUrl}
+                              fileName={attachment.fileName}
+                              className="max-w-24 truncate text-xs"
+                            >
+                              {attachment.fileName}
+                            </ImagePreviewLink>
+                          ) : (
+                            <FileLink
+                              fileUrl={attachment.fileUrl}
+                              className="max-w-24 truncate text-xs"
+                            >
+                              {attachment.fileName}
+                            </FileLink>
+                          )}
                           {canEdit(item) && (
                             <button
                               onClick={() => handleDeleteAttachment(attachment.id)}
