@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import type { LogItemWithUser, LogItemMentionInfo } from '@/lib/core/log-item/queries';
@@ -285,8 +285,6 @@ export function Timeline({
   const [editAmount, setEditAmount] = useState<string | null>(null);
   const [editDate, setEditDate] = useState<Date | undefined>(undefined);
   const [editNewFiles, setEditNewFiles] = useState<File[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredItems = filter === 'ALL' ? logItems : logItems.filter(item => item.type === filter);
 
@@ -302,12 +300,9 @@ export function Timeline({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
-    if (selectedFiles) {
-      setFiles(prev => [...prev, ...Array.from(selectedFiles)]);
-    }
-    // Reset input so same file can be selected again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    if (selectedFiles && selectedFiles.length > 0) {
+      const newFiles = Array.from(selectedFiles);
+      setFiles(prev => [...prev, ...newFiles]);
     }
   };
 
@@ -394,11 +389,9 @@ export function Timeline({
 
   const handleEditFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
-    if (selectedFiles) {
-      setEditNewFiles(prev => [...prev, ...Array.from(selectedFiles)]);
-    }
-    if (editFileInputRef.current) {
-      editFileInputRef.current.value = '';
+    if (selectedFiles && selectedFiles.length > 0) {
+      const newFiles = Array.from(selectedFiles);
+      setEditNewFiles(prev => [...prev, ...newFiles]);
     }
   };
 
@@ -530,36 +523,13 @@ export function Timeline({
 
             {/* File attachments */}
             <div className="flex flex-wrap items-center gap-2">
-              <input
-                ref={fileInputRef}
+              <Input
                 type="file"
                 accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
                 multiple
                 onChange={handleFileChange}
-                className="hidden"
+                className="w-auto"
               />
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="mr-1"
-                >
-                  <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                </svg>
-                Attach
-              </Button>
               {files.map((file, index) => (
                 <div
                   key={index}
@@ -692,36 +662,13 @@ export function Timeline({
 
                   {/* Add new attachments */}
                   <div className="flex flex-wrap items-center gap-2">
-                    <input
-                      ref={editFileInputRef}
+                    <Input
                       type="file"
                       accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
                       multiple
                       onChange={handleEditFileChange}
-                      className="hidden"
+                      className="w-auto"
                     />
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => editFileInputRef.current?.click()}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="mr-1"
-                      >
-                        <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-                      </svg>
-                      Attach
-                    </Button>
                     {editNewFiles.map((file, index) => (
                       <div
                         key={index}
