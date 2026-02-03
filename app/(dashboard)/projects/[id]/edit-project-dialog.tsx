@@ -11,8 +11,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
-  DialogTrigger
+  DialogTitle
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,11 +29,12 @@ import { updateProjectAction } from '@/lib/core/project/update-project-action';
 type Props = {
   project: Project;
   sections: PropertySection[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 };
 
-export function EditProjectDialog({ project, sections }: Props) {
+export function EditProjectDialog({ project, sections, open, onOpenChange }: Props) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [name, setName] = useState(project.name);
   const [description, setDescription] = useState(project.description ?? '');
@@ -59,13 +59,12 @@ export function EditProjectDialog({ project, sections }: Props) {
     }
 
     toast.success('Project updated');
-    setOpen(false);
+    onOpenChange(false);
     router.refresh();
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" />}>Edit</DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Project</DialogTitle>

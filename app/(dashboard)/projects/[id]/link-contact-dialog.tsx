@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,8 +10,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
-  DialogTrigger
+  DialogTitle
 } from '@/components/ui/dialog';
 import { SelectContactDropdown } from '@/components/ui/select-contact-dropdown';
 import type { Contact, Project } from '@/lib/services/db/schema';
@@ -22,11 +20,18 @@ type Props = {
   project: Project;
   contacts: Contact[];
   linkedContactIds: string[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 };
 
-export function LinkContactDialog({ project, contacts, linkedContactIds }: Props) {
+export function LinkContactDialog({
+  project,
+  contacts,
+  linkedContactIds,
+  open,
+  onOpenChange
+}: Props) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [selectedContactId, setSelectedContactId] = useState<string>('');
   const [localContacts, setLocalContacts] = useState<Contact[]>([]);
@@ -60,7 +65,7 @@ export function LinkContactDialog({ project, contacts, linkedContactIds }: Props
     }
 
     toast.success('Contact linked to project');
-    setOpen(false);
+    onOpenChange(false);
     setSelectedContactId('');
     router.refresh();
   };
@@ -70,11 +75,7 @@ export function LinkContactDialog({ project, contacts, linkedContactIds }: Props
   const noAvailableContacts = availableContacts.length === 0 && localContacts.length === 0;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <UserPlus className="h-4 w-4 mr-1" />
-        Link Contact
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Link Contact to Project</DialogTitle>
