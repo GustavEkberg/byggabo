@@ -1,21 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { SectionIcon } from '@/components/ui/section-icon';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from '@/components/ui/alert-dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type { Contact, Project, PropertySection } from '@/lib/services/db/schema';
 import { archiveProjectAction } from '@/lib/core/project/archive-project-action';
 import { EditProjectDialog } from './edit-project-dialog';
@@ -30,13 +19,10 @@ type Props = {
 
 export function ProjectHeader({ project, sections, contacts, linkedContactIds }: Props) {
   const router = useRouter();
-  const [archiving, setArchiving] = useState(false);
   const section = project.sectionId ? sections.find(s => s.id === project.sectionId) : null;
 
   const handleArchive = async () => {
-    setArchiving(true);
     const result = await archiveProjectAction({ id: project.id });
-    setArchiving(false);
 
     if (result._tag === 'Error') {
       toast.error(result.message);
@@ -69,23 +55,16 @@ export function ProjectHeader({ project, sections, contacts, linkedContactIds }:
           linkedContactIds={linkedContactIds}
         />
         <EditProjectDialog project={project} sections={sections} />
-        <AlertDialog>
-          <AlertDialogTrigger render={<Button variant="destructive" />}>Archive</AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Archive project?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will hide the project from your list. You can restore it later.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleArchive} disabled={archiving}>
-                {archiving ? 'Archiving...' : 'Archive'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <ConfirmDialog
+          title="Archive project?"
+          description="This will hide the project from your list. You can restore it later."
+          actionLabel="Archive"
+          variant="default"
+          onConfirm={handleArchive}
+          trigger={<Button variant="destructive" />}
+        >
+          Archive
+        </ConfirmDialog>
       </div>
     </div>
   );

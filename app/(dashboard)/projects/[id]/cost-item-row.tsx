@@ -1,19 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from '@/components/ui/alert-dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type { CostItem } from '@/lib/services/db/schema';
 import { deleteCostItemAction } from '@/lib/core/cost-item/delete-cost-item-action';
 import { FileLink } from '@/components/ui/file-link';
@@ -24,12 +13,8 @@ type Props = {
 };
 
 export function CostItemRow({ costItem }: Props) {
-  const [deleting, setDeleting] = useState(false);
-
   const handleDelete = async () => {
-    setDeleting(true);
     const result = await deleteCostItemAction(costItem.id);
-    setDeleting(false);
 
     if (result._tag === 'Error') {
       toast.error(result.message);
@@ -64,40 +49,30 @@ export function CostItemRow({ costItem }: Props) {
       </div>
       <div className="flex items-center gap-1">
         <EditCostItemDialog costItem={costItem} />
-        <AlertDialog>
-          <AlertDialogTrigger render={<Button variant="ghost" size="icon-xs" />}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-muted-foreground"
-            >
-              <path d="M3 6h18" />
-              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-            </svg>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete cost?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete &quot;{costItem.name}&quot; from the project.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} disabled={deleting}>
-                {deleting ? 'Deleting...' : 'Delete'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <ConfirmDialog
+          title="Delete cost?"
+          description={`This will permanently delete "${costItem.name}" from the project.`}
+          actionLabel="Delete"
+          onConfirm={handleDelete}
+          trigger={<Button variant="ghost" size="icon-xs" />}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-muted-foreground"
+          >
+            <path d="M3 6h18" />
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+          </svg>
+        </ConfirmDialog>
       </div>
     </div>
   );

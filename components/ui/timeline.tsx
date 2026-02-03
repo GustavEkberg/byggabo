@@ -20,6 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { addCommentAction } from '@/lib/core/log-item/add-comment-action';
 import { updateLogItemAction } from '@/lib/core/log-item/update-log-item-action';
 import { deleteLogItemAction } from '@/lib/core/log-item/delete-log-item-action';
@@ -285,6 +286,10 @@ export function Timeline({
   const [editAmount, setEditAmount] = useState<string | null>(null);
   const [editDate, setEditDate] = useState<Date | undefined>(undefined);
   const [editNewFiles, setEditNewFiles] = useState<File[]>([]);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    type: 'log-item' | 'attachment';
+    id: string;
+  } | null>(null);
 
   const filteredItems = filter === 'ALL' ? logItems : logItems.filter(item => item.type === filter);
 
@@ -458,34 +463,33 @@ export function Timeline({
     cancelEditing();
   };
 
-  const handleDelete = async (logItemId: string) => {
-    if (!confirm('Delete this item?')) return;
-
-    setPending(true);
-    const result = await deleteLogItemAction({ logItemId });
-    setPending(false);
-
-    if (result._tag === 'Error') {
-      toast.error(result.message);
-      return;
-    }
-
-    toast.success('Deleted');
+  const handleDelete = (logItemId: string) => {
+    setConfirmDelete({ type: 'log-item', id: logItemId });
   };
 
-  const handleDeleteAttachment = async (attachmentId: string) => {
-    if (!confirm('Delete this attachment?')) return;
+  const handleDeleteAttachment = (attachmentId: string) => {
+    setConfirmDelete({ type: 'attachment', id: attachmentId });
+  };
 
-    setPending(true);
-    const result = await deleteAttachmentAction({ attachmentId });
-    setPending(false);
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) return;
 
-    if (result._tag === 'Error') {
-      toast.error(result.message);
-      return;
+    if (confirmDelete.type === 'log-item') {
+      const result = await deleteLogItemAction({ logItemId: confirmDelete.id });
+      if (result._tag === 'Error') {
+        toast.error(result.message);
+      } else {
+        toast.success('Deleted');
+      }
+    } else {
+      const result = await deleteAttachmentAction({ attachmentId: confirmDelete.id });
+      if (result._tag === 'Error') {
+        toast.error(result.message);
+      } else {
+        toast.success('Attachment deleted');
+      }
     }
-
-    toast.success('Attachment deleted');
+    setConfirmDelete(null);
   };
 
   const canEdit = (item: TimelineItem) => item.createdBy?.id === currentUserId;
@@ -877,6 +881,18 @@ export function Timeline({
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        onOpenChange={open => {
+          if (!open) setConfirmDelete(null);
+        }}
+        title={confirmDelete?.type === 'attachment' ? 'Delete attachment?' : 'Delete item?'}
+        description="This action cannot be undone."
+        actionLabel="Delete"
+        size="sm"
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

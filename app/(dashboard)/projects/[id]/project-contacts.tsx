@@ -1,21 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { X, Building2, Mail, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from '@/components/ui/alert-dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { SectionIcon } from '@/components/ui/section-icon';
 import type { Contact, ContactCategory, Project } from '@/lib/services/db/schema';
 import { unlinkContactAction } from '@/lib/core/project-contact/unlink-contact-action';
@@ -28,20 +17,15 @@ type Props = {
 
 export function ProjectContacts({ project, linkedContacts, categories }: Props) {
   const router = useRouter();
-  const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
 
   const getCategory = (categoryId: string | null) =>
     categoryId ? categories.find(c => c.id === categoryId) : null;
 
   const handleUnlink = async (contactId: string) => {
-    setUnlinkingId(contactId);
-
     const result = await unlinkContactAction({
       projectId: project.id,
       contactId
     });
-
-    setUnlinkingId(null);
 
     if (result._tag === 'Error') {
       toast.error(result.message);
@@ -106,36 +90,21 @@ export function ProjectContacts({ project, linkedContacts, categories }: Props) 
                   </div>
                 </div>
               </div>
-              <AlertDialog>
-                <AlertDialogTrigger
-                  render={
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                    />
-                  }
-                >
-                  <X className="h-4 w-4" />
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Unlink contact?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Remove {contact.name} from this project. They can be re-linked later.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => handleUnlink(contact.id)}
-                      disabled={unlinkingId === contact.id}
-                    >
-                      {unlinkingId === contact.id ? 'Unlinking...' : 'Unlink'}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <ConfirmDialog
+                title="Unlink contact?"
+                description={`Remove ${contact.name} from this project. They can be re-linked later.`}
+                actionLabel="Unlink"
+                onConfirm={() => handleUnlink(contact.id)}
+                trigger={
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                  />
+                }
+              >
+                <X className="h-4 w-4" />
+              </ConfirmDialog>
             </div>
           );
         })}
