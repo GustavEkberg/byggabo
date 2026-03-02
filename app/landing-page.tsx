@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  FolderKanban,
   ClipboardList,
   Wallet,
   Users,
@@ -11,7 +10,8 @@ import {
   ChevronRight,
   FileText,
   Receipt,
-  MessageSquare
+  MessageSquare,
+  Bomb
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -667,12 +667,6 @@ function AnimatedEventLog({ events, contacts, currency }: AnimatedEventLogProps)
 
 const FEATURES = [
   {
-    icon: FolderKanban,
-    title: 'Multiple Projects',
-    description:
-      'Track renovations across different areas of your home. Kitchen, bathroom, garden - all in one place.'
-  },
-  {
     icon: ClipboardList,
     title: 'Event Timeline',
     description:
@@ -689,6 +683,12 @@ const FEATURES = [
     title: 'Contacts',
     description:
       'Keep your contractors organized. Carpenters, plumbers, electricians - all their details in one place.'
+  },
+  {
+    icon: Bomb,
+    title: 'Not Enshitified Yet',
+    description:
+      'No ads, no upsells, no AI training ground of your personal data. Just a tool that works.'
   }
 ];
 
