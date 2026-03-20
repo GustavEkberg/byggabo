@@ -110,6 +110,7 @@ async function Content({ projectId }: { projectId: string }) {
         onFailure: error =>
           Match.value(error._tag).pipe(
             Match.when('UnauthenticatedError', () => NextEffect.redirect('/login')),
+            Match.when('NoPropertyError', () => NextEffect.redirect('/login')),
             Match.when('NotFoundError', () => NextEffect.redirect('/projects')),
             Match.orElse(() =>
               Effect.succeed(

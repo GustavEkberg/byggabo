@@ -68,6 +68,7 @@ async function Content() {
         onFailure: error =>
           Match.value(error._tag).pipe(
             Match.when('UnauthenticatedError', () => NextEffect.redirect('/login')),
+            Match.when('NoPropertyError', () => NextEffect.redirect('/login')),
             Match.orElse(() =>
               Effect.succeed(
                 <div className="mx-auto max-w-6xl px-4 py-8">
