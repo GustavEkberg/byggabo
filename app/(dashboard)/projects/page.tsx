@@ -55,6 +55,7 @@ async function Content() {
                 title="Recent Activity"
                 subtitle="Latest updates across all projects"
                 showProjectName
+                maxHeight="max-h-[32rem]"
               />
             </div>
           </div>

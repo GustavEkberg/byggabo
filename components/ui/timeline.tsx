@@ -82,6 +82,8 @@ type Props = {
   allowAddComment?: boolean;
   /** Whether to show project name (for dashboard view) */
   showProjectName?: boolean;
+  /** Max height class for the scrollable list (default: "max-h-96") */
+  maxHeight?: string;
 };
 
 const LOG_TYPES = ['COST_ITEM', 'QUOTATION', 'INVOICE', 'COMMENT'] as const;
@@ -273,7 +275,8 @@ export function Timeline({
   title = 'Timeline',
   subtitle,
   allowAddComment = false,
-  showProjectName = false
+  showProjectName = false,
+  maxHeight = 'max-h-96'
 }: Props) {
   const [filter, setFilter] = useState<LogType | 'ALL'>('ALL');
   const [showAddComment, setShowAddComment] = useState(false);
@@ -532,7 +535,7 @@ export function Timeline({
                 accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
                 multiple
                 onChange={handleFileChange}
-                className="w-auto"
+                className="w-auto max-w-full"
               />
               {files.map((file, index) => (
                 <div
@@ -604,14 +607,14 @@ export function Timeline({
             : `No ${getTypeLabel(filter)?.toLowerCase()} events.`}
         </div>
       ) : (
-        <div className="divide-y max-h-96 overflow-y-auto">
+        <div className={`divide-y ${maxHeight} overflow-y-auto`}>
           {filteredItems.map(item => (
             <div key={item.id} className="flex gap-3 p-4">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
                 {getTypeIcon(item.type)}
               </div>
               {editingId === item.id ? (
-                <form onSubmit={handleUpdate} className="flex-1 space-y-2">
+                <form onSubmit={handleUpdate} className="flex-1 min-w-0 space-y-2">
                   <Textarea
                     value={editDescription}
                     onChange={e => setEditDescription(e.target.value)}
@@ -671,7 +674,7 @@ export function Timeline({
                       accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
                       multiple
                       onChange={handleEditFileChange}
-                      className="w-auto"
+                      className="w-auto max-w-full"
                     />
                     {editNewFiles.map((file, index) => (
                       <div
